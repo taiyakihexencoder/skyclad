@@ -2,7 +2,11 @@ using Unity.Collections;
 using Unity.Entities;
 
 public partial struct #SCRIPTNAME# : ISystem {
+	private EntityQuery query;
+
 	void ISystem.OnCreate(ref SystemState state) {
+		query = new EntityQueryBuilder(Allocator.Temp)
+			.Build(ref state);
 	}
 
 	void ISystem.OnUpdate(ref SystemState state) {
