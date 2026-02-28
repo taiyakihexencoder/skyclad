@@ -1,0 +1,19 @@
+using Unity.Collections;
+using Unity.Entities;
+
+public partial struct #SCRIPTNAME# : ISystem {
+	void ISystem.OnCreate(ref SystemState state) {
+	}
+
+	void ISystem.OnUpdate(ref SystemState state) {
+	}
+	
+	void ISystem.OnDestroy(ref SystemState state) {
+	}
+
+	private readonly EntityCommandBuffer CreateCommandBuffer(ref SystemState state) {
+		return SystemAPI
+			.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>()
+			.CreateCommandBuffer(state.World.Unmanaged);
+	}
+}
