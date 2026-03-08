@@ -2,7 +2,8 @@
     "name": "skyclad.editor",
     "rootNamespace": "",
     "references": [
-        "Shujin141.Skyclad"
+        "skyclad",
+        "Unity.Mathematics"
     ],
     "includePlatforms": [
         "Editor"
