@@ -1,13 +1,18 @@
 {
-    "name": "Taiyakihexencoder.skyclad",
+    "name": "skyclad",
     "rootNamespace": "",
     "references": [
+        "Unity.Addressables",
         "Unity.Burst",
         "Unity.Collections",
         "Unity.Entities",
         "Unity.Entities.Graphics",
         "Unity.InputSystem",
-        "Unity.Mathematics"
+        "Unity.Mathematics",
+        "Unity.Physics",
+        "Unity.Physics.Hybrid",
+        "Unity.ResourceManager",
+        "Unity.Transforms"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

@@ -12,5 +12,9 @@
   },
   "changelogUrl": "https://example.com/changelog.html",
   "documentationUrl": "https://example.com/",
-  "licensesUrl": "https://example.com/licensing.html"
+  "licensesUrl": "https://example.com/licensing.html",
+  "dependencies": {
+    "com.unity.addressables": "2.8.1",
+    "com.unity.feature.ecs": "1.0.0"
+  }
 }

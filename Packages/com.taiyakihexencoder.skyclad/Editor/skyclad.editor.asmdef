@@ -2,7 +2,10 @@
     "name": "skyclad.editor",
     "rootNamespace": "",
     "references": [
-        "Shujin141.Skyclad"
+        "skyclad",
+        "Unity.Mathematics",
+        "Unity.Addressables",
+        "Unity.Addressables.Editor"
     ],
     "includePlatforms": [
         "Editor"
