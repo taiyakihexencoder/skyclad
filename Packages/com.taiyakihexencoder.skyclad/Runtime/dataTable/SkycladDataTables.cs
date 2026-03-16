@@ -68,14 +68,15 @@ namespace skyclad {
 				() => {
 					try {
 						string path = Application.streamingAssetsPath + 
-							$".skyclad{Path.DirectorySeparatorChar}.app{Path.DirectorySeparatorChar}{loader.TableName}.bytes";
+							$"{Path.DirectorySeparatorChar}.skyclad{Path.DirectorySeparatorChar}.app{Path.DirectorySeparatorChar}{loader.TableName}.bytes";
 
 						using (FileStream stream = new FileStream(path, FileMode.Open, FileAccess.Read)) {
 							using (BinaryReader reader = new BinaryReader(stream, System.Text.Encoding.UTF8)) {
 								list = loader.Load(reader);
 							}
 						}
-					} catch (System.Exception) {
+					} catch (System.Exception e) {
+						UnityEngine.Debug.LogError(e);
 						// todo
 						list = null;
 					}
@@ -108,13 +109,10 @@ namespace skyclad {
 		}
 
 		internal void Dispose(SynchronizationContext context) {
+			EntityManager entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
+			OnDispose(entityManager);
 			Task.Run(async () => {
-				context.Send((_) => {
-					EntityManager entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
-					OnDispose(entityManager);
-				}, null);
 				await Task.Yield();
-
 				context.Post((_) => {
 					if (assetReference.IsCreated) {
 						assetReference.Dispose();

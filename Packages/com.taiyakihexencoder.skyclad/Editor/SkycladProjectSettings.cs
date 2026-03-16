@@ -24,7 +24,7 @@ namespace skyclad.editor {
 						_instance = AssetDatabase.LoadAssetAtPath<SkycladProjectSettings>(assetPath);
 					} else {
 						_instance = CreateInstance<SkycladProjectSettings>();
-						SkycladEditorUtility.CreateAsset(_instance, _generatePath);
+						SkycladEditorUtility.Asset.Create(_instance, _generatePath);
 					}
 				}
 				return _instance;
@@ -42,6 +42,10 @@ namespace skyclad.editor {
 		[SerializeField]
 		private CharacterProjectSettings _character;
 		internal CharacterProjectSettings Character => _character;
+
+		[SerializeField]
+		private FieldProjectSettings _field;
+		internal FieldProjectSettings Field => _field;
 	}
 
 	[CustomEditor(typeof(SkycladProjectSettings))]

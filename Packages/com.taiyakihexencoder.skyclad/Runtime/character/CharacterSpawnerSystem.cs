@@ -1,11 +1,12 @@
 ﻿using Unity.Collections;
 using Unity.Entities;
+using Unity.Mathematics;
 using Unity.Transforms;
 
-namespace skyclad {
-	[UpdateInGroup(typeof(SkycladSimulationSystemGroup))]
-	public partial struct SpawnerSystem : ISystem {
-		private EntityQuery query;
+namespace skyclad.character {
+	[UpdateInGroup(typeof(SkycladCharacterSystemGroup))]
+	public partial struct CharacterSpawnerSystem : ISystem {
+ 		private EntityQuery query;
 		private EntityQuery requestQuery;
 
 		void ISystem.OnCreate(ref SystemState state) {
@@ -15,7 +16,7 @@ namespace skyclad {
 			state.RequireForUpdate(query);
 
 			requestQuery = new EntityQueryBuilder(Allocator.Temp)
-				.WithAll<RequestSpawnComponent>()
+				.WithAll<RequestSpawnComponent, CharacterSpawnParameterElement>()
 				.Build(ref state);
 			state.RequireForUpdate(requestQuery);
 		}
@@ -41,7 +42,12 @@ namespace skyclad {
 			[ReadOnly] public NativeArray<SpawnerComponent> spawners;
 			public EntityCommandBuffer.ParallelWriter commandBuffer;
 
-			void Execute(in Entity entity, [EntityIndexInQuery] int sortKey, RefRO<RequestSpawnComponent> request) {
+			void Execute(
+				in Entity entity, 
+				[EntityIndexInQuery] int sortKey, 
+				RefRO<RequestSpawnComponent> request,
+				RefRO<CharacterSpawnParameterElement> spawnParameter
+			) {
 				foreach(SpawnerComponent spawner in spawners) {
 					if (spawner.spawnId == request.ValueRO.spawnId) {
 						Entity instance = commandBuffer.Instantiate(sortKey, spawner.prefab);
@@ -53,6 +59,29 @@ namespace skyclad {
 								request.ValueRO.rotation,
 								request.ValueRO.scale
 							)
+						);
+						commandBuffer.SetComponent(
+							sortKey,
+							instance,
+							new LocalToWorld{ 
+								Value = float4x4.TRS(
+									request.ValueRO.position, 
+									request.ValueRO.rotation, 
+									new float3(request.ValueRO.scale, request.ValueRO.scale, request.ValueRO.scale)
+								)
+							}
+						);
+						commandBuffer.SetComponent(
+							sortKey,
+							instance,
+							spawnParameter.ValueRO
+						);
+
+						/// Parent.Value = Entity.NullにするとLocalToWorldが更新されなくなるため、
+						/// 削除しておく必要がある。
+						commandBuffer.RemoveComponent<Parent>(
+							sortKey,
+							instance
 						);
 						break;
 					}

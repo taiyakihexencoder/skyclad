@@ -3,7 +3,9 @@
     "rootNamespace": "",
     "references": [
         "skyclad",
-        "Unity.Mathematics"
+        "Unity.Mathematics",
+        "Unity.Addressables",
+        "Unity.Addressables.Editor"
     ],
     "includePlatforms": [
         "Editor"

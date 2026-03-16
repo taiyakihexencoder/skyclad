@@ -8,11 +8,26 @@ namespace skyclad.editor {
 		internal static void Generate() {
 			Assembly assembly = typeof(DataTableColumnAttribute).Assembly;
 			MakeScripts("DataTableLoaders", assembly);
+
+			foreach(System.Type type in CreateTypeList(assembly)) {
+				MakeSystemScript(type);
+			}
+		}
+
+		private static List<System.Type> CreateTypeList(Assembly assembly) {
+			List<System.Type> typeList = new List<System.Type>();
+			foreach (System.Type type in assembly.GetTypes()) {
+				if (type.IsValueType && !type.IsEnum 
+					&& type.GetCustomAttribute<DataTableColumnAttribute>() != null) {
+					typeList.Add(type);
+				}
+			}
+			return typeList;
 		}
 
 		private static void MakeScripts(string name, Assembly assembly) {
 			SourceCodeGenerator gen = new SourceCodeGenerator();
-			List<System.Type> typeList = new List<System.Type>();
+			List<System.Type> typeList = CreateTypeList(assembly);
 
 			gen.AppendLine($"using System.Collections.Generic;");
 			gen.AppendLine($"using System.IO;");
@@ -22,13 +37,6 @@ namespace skyclad.editor {
 
 			gen.AppendLine($"namespace skyclad {{");
 			using (gen.IndentBlock) {
-				foreach (System.Type type in assembly.GetTypes()) {
-					if (type.IsValueType && !type.IsEnum 
-						&& type.GetCustomAttribute<DataTableColumnAttribute>() != null) {
-						typeList.Add(type);
-					}
-				}
-
 				MakeDataTablesScript(gen, assembly, typeList);
 
 				gen.AppendLine($"");
@@ -149,7 +157,9 @@ namespace skyclad.editor {
 				float3Size = floatSize * 3,
 				quaternionSize = floatSize * 4;
 
-			foreach(FieldInfo field in type.GetFields(BindingFlags.Instance | BindingFlags.Public)) {
+			List<FieldInfo> fields = new List<FieldInfo>(type.GetFields(BindingFlags.Instance | BindingFlags.Public));
+			fields.Sort((a, b) => (a.GetCustomAttribute<OrderAttribute>()?.value ?? -1).CompareTo(b.GetCustomAttribute<OrderAttribute>()?.value ?? -1));
+			foreach(FieldInfo field in fields) {
 				if (field.FieldType == intType) {
 					textList.Add($"{field.Name} = System.BitConverter.ToInt32(bytes, offset + {offset}),");
 					offset += intSize;
@@ -242,10 +252,106 @@ namespace skyclad.editor {
 			gen.AppendLine($"");
 
 			// テーブル読み込み完了フラグ
-			gen.AppendLine($"public struct {type.Name}TableExists : IComponentData {{ }}");
+			gen.AppendLine($"public partial struct {type.Name}TableExists : IComponentData {{ }}");
 
 			// 読み込みフラグの破棄リクエスト
 			gen.AppendLine($"internal struct Request{type.Name}TableDisposeComponent : IComponentData {{ }}");
+		}
+
+		private static void MakeSystemScript(System.Type type) {
+			SourceCodeGenerator gen = new SourceCodeGenerator();
+			gen.AppendLine($"using Unity.Collections;");
+			gen.AppendLine($"using Unity.Entities;");
+
+			gen.AppendLine($"");
+
+			gen.AppendLine($"namespace skyclad {{");
+			using (gen.IndentBlock) {
+
+				gen.AppendLine($"[UpdateInGroup(typeof(SkycladDataTableSystemGroup))]");
+				gen.AppendLine($"public partial struct {type.Name}DisposeSystem : ISystem {{");
+				using(gen.IndentBlock) {
+
+					gen.AppendLine($"private EntityQuery requestQuery;");
+					gen.AppendLine($"private EntityQuery existsQuery;");
+
+					gen.AppendLine($"");
+
+					gen.AppendLine($"void ISystem.OnCreate(ref SystemState state) {{");
+					using(gen.IndentBlock) {
+
+						gen.AppendLine($"requestQuery = new EntityQueryBuilder(Allocator.Temp)");
+						using(gen.IndentBlock) {
+							gen.AppendLine($".WithAll<Request{type.Name}TableDisposeComponent>()");
+							gen.AppendLine($".Build(ref state);");
+						}
+						gen.AppendLine($"state.RequireForUpdate(requestQuery);");
+
+						gen.AppendLine($"");
+						gen.AppendLine($"existsQuery = new EntityQueryBuilder(Allocator.Temp)");
+						using(gen.IndentBlock) {
+							gen.AppendLine($".WithAll<{type.Name}TableExists>()");
+							gen.AppendLine($".Build(ref state);");
+						}
+
+					}
+					gen.AppendLine($"}}");
+
+					gen.AppendLine($"");
+
+					gen.AppendLine($"void ISystem.OnUpdate(ref SystemState state) {{");
+					using(gen.IndentBlock) {
+						gen.AppendLine($"EntityCommandBuffer commandBuffer = CreateCommandBuffer(ref state);");
+
+						gen.AppendLine($"");
+
+						gen.AppendLine($"state.Dependency = new DestroyJob {{");
+						using(gen.IndentBlock) {
+							gen.AppendLine($"commandBuffer = commandBuffer,");
+						}
+						gen.AppendLine($"}}.Schedule(existsQuery, state.Dependency);");
+
+						gen.AppendLine($"");
+
+						gen.AppendLine($"state.Dependency = new DestroyJob {{");
+						using(gen.IndentBlock) {
+							gen.AppendLine($"commandBuffer = commandBuffer,");
+						}
+						gen.AppendLine($"}}.Schedule(requestQuery, state.Dependency);");
+					}
+					gen.AppendLine($"}}");
+
+					gen.AppendLine($"");
+
+					gen.AppendLine($"private readonly EntityCommandBuffer CreateCommandBuffer(ref SystemState state) {{");
+					using (gen.IndentBlock) {
+						gen.AppendLine($"return SystemAPI");
+						using(gen.IndentBlock) {
+							gen.AppendLine($".GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>()");
+							gen.AppendLine($".CreateCommandBuffer(state.World.Unmanaged);");
+						}
+					}
+					gen.AppendLine($"}}");
+
+					gen.AppendLine($"");
+					gen.AppendLine($"partial struct DestroyJob : IJobEntity {{");
+					using (gen.IndentBlock) {
+						gen.AppendLine($"public EntityCommandBuffer commandBuffer;");
+						gen.AppendLine($"");
+						gen.AppendLine($"void Execute(in Entity entity) {{");
+						using (gen.IndentBlock) {
+							gen.AppendLine($"commandBuffer.DestroyEntity(entity);");
+						}
+						gen.AppendLine($"}}");
+					}
+					gen.AppendLine($"}}");
+				}
+				gen.AppendLine($"}}");
+
+			}
+			gen.AppendLine($"}}");
+
+			gen.Generate($"dataTable{Path.DirectorySeparatorChar}systems{Path.DirectorySeparatorChar}{type.Name}DisposeSystem.cs", false);
 		}
 	}
 }
