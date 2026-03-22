@@ -9,6 +9,8 @@ namespace skyclad {
 		public FixedString64Bytes name;
 		public int statusIndex;
 		public BlobAssetReference<Collider> collider;
+		public uint hitBoxBelongsTo;
+		public uint hitBoxCollidesWith;
 		public bool hasController;
 		public int dioramaId;
 	}

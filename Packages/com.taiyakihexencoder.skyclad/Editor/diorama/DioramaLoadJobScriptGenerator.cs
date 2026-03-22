@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 
@@ -9,13 +10,23 @@ namespace skyclad.editor {
 		private static Dictionary<string, int> _statusIndexList;
 		private static Dictionary<string, CharacterProjectSettings.ColliderUnit> _colliderTable;
 		private static Dictionary<string, CharacterProjectSettings.CharacterController> _controllerTable;
-
+		private static List<int> _layerValueList = new List<int>();
+		private static List<string> _layerNameList = new List<string>();
 		internal static void Generate(SerializedObject serializedObject) {
 			SerializedProperty dioramasProperty = serializedObject.FindProperty("_diorama._units");
 			_characterTable = GetCharacterTable(serializedObject);
 			_colliderTable = GetColliderTable(serializedObject);
 			_controllerTable = GetControllerTable(serializedObject);
 			_statusIndexList = GetStatusIndexList(serializedObject);
+
+			_layerValueList.Clear();
+			_layerNameList.Clear();
+			foreach(FieldInfo field in typeof(Layer).GetFields(BindingFlags.Static | BindingFlags.Public)) {
+				if (field.IsLiteral && field.FieldType == typeof(uint)) {
+					_layerValueList.Add((int)(uint)field.GetValue(null));
+					_layerNameList.Add(field.Name);
+				}
+			}
 
 			SourceCodeGenerator gen = new SourceCodeGenerator();
 			gen.AppendLine($"using Unity.Entities;");
@@ -141,6 +152,17 @@ namespace skyclad.editor {
 					if (character.type.hasCollider) {
 						if (_colliderTable.TryGetValue(character.colliderGuid, out CharacterProjectSettings.ColliderUnit collider)) {
 							gen.AppendLine($"collider = CharacterCollider.Blob{collider.name},");
+
+							int selectedIndex = _layerValueList.FindIndex(v => v == (int)character.hitBoxLayer);
+							if (selectedIndex < 0) {
+								gen.AppendLine($"hitBoxBelongsTo = 0,");
+								gen.AppendLine($"hitBoxCollidesWith = 0,");
+							}
+							else {
+								string layerText = (selectedIndex < 0 ? "" : _layerNameList[selectedIndex]);
+								gen.AppendLine($"hitBoxBelongsTo = Layer.{layerText},");
+								gen.AppendLine($"hitBoxCollidesWith = Layer.CollidesWith.{layerText},");
+							}
 						}
 					} else {
 						gen.AppendLine($"collider = BlobAssetReference<Collider>.Null,");
@@ -255,6 +277,7 @@ namespace skyclad.editor {
 								values = controllerParameters,
 							},
 							hitBoxes = hitBoxes,
+							hitBoxLayer = characterUnitProperty.Of("hitBoxLayer").uintValue,
 						}
 					);
 				}

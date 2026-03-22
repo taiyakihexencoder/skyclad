@@ -273,6 +273,15 @@ namespace skyclad.editor {
 								p.Of("isPlayerCharacter").boolValue = false;
 								p.Of("colliderGuid").stringValue = "";
 								p.Of("controllerGuid").stringValue = "";
+								p.Of("type").Of("hasCollider").boolValue = false;
+								p.Of("type").Of("hasStatus").boolValue = false;
+								p.Of("type").Of("hasController").boolValue = false;
+								p.Of("status").Of("names").arraySize = 0;
+								p.Of("status").Of("values").arraySize = 0;
+								p.Of("controller").Of("names").arraySize = 0;
+								p.Of("controller").Of("values").arraySize = 0;
+								p.Of("hitBoxes").arraySize = 0;
+								p.Of("hitBoxBelongsTo").uintValue = 0;
 							});
 						}
 					} EditorGUI.indentLevel--;
@@ -376,14 +385,30 @@ namespace skyclad.editor {
 					colliderProperty.stringValue = "";
 				}
 
+				SkycladEditorGUI.Layout.Space(height:32);
+
 				// HitBox
-				SkycladEditorGUI.Layout.Label("HitBox");
+				using (SkycladEditorGUI.Layout.Horizontal) {
+					SerializedProperty hitBoxLayerProperty = unitProperty.Of("hitBoxLayer");
+					SkycladEditorGUI.Layout.Label("HitBox");
+					SkycladEditorGUI.Layout.Space(width: 50);
+					SkycladEditorGUI.Layout.Label("Layer:");
+					hitBoxLayerProperty.uintValue = (uint) EditorGUILayout.IntPopup(
+						(int)hitBoxLayerProperty.uintValue, 
+						layerNameList.ToArray(), 
+						layerValueList.ToArray(), 
+						GUILayout.Width(120.0f)
+					);
+				}
 				using (SkycladEditorGUI.Layout.Box(new RectOffset(16,16,0,0))) {
 					using(SkycladEditorGUI.Layout.Horizontal) {
 						SkycladEditorGUI.Layout.Label("Extent", 250.0f);
+						SkycladEditorGUI.Layout.Space(width:16);
 						SkycladEditorGUI.Layout.Label("Offset", 250.0f);
 					}
+
 					SerializedProperty hitBoxesProperty = unitProperty.Of("hitBoxes");
+
 					for(int i = 0; i < hitBoxesProperty.arraySize; ++i) {
 						using (SkycladEditorGUI.Layout.Horizontal) {
 							SerializedProperty hitBoxProperty = hitBoxesProperty.Of(i);
@@ -391,6 +416,7 @@ namespace skyclad.editor {
 							SerializedProperty offsetProperty = hitBoxProperty.Of("offset");
 
 							extentProperty.vector3Value = EditorGUILayout.Vector3Field("", extentProperty.vector3Value, GUILayout.Width(250.0f));
+							SkycladEditorGUI.Layout.Space(width:16);
 							offsetProperty.vector3Value = EditorGUILayout.Vector3Field("", offsetProperty.vector3Value, GUILayout.Width(250.0f));
 
 							if (SkycladEditorGUI.Layout.MinusButton()) {
@@ -408,6 +434,8 @@ namespace skyclad.editor {
 
 				}
 			}
+			
+			SkycladEditorGUI.Layout.Space(height:32);
 
 			if (unitProperty.Of("type.hasController").boolValue) {
 				SerializedProperty controllerProperty = unitProperty.Of("controllerGuid");

@@ -53,6 +53,11 @@ namespace skyclad.editor {
 			/// ヒットボックス
 			/// </summary>
 			public CharacterHitBox[] hitBoxes;
+
+			/// <summary>
+			/// ヒットボックスのレイヤー
+			/// </summary>
+			public uint hitBoxLayer;
 		}
 
 		internal enum ParameterType {

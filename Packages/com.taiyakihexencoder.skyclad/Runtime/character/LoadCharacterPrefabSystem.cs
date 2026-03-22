@@ -283,8 +283,8 @@ namespace skyclad.character {
 							Size = hitBox.extent,
 						}, 
 						filter: new CollisionFilter {
-							BelongsTo = 0,
-							CollidesWith = 0,
+							BelongsTo = request.hitBoxBelongsTo,
+							CollidesWith = request.hitBoxCollidesWith,
 						},
 						material: Material.Default
 					);
