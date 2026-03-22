@@ -1,5 +1,6 @@
 ﻿using Unity.Entities;
 using Unity.Transforms;
+using UnityEngine;
 
 namespace skyclad {
 	public static class SkycladWorld {
@@ -7,8 +8,7 @@ namespace skyclad {
 		internal static Entity RootEntity {
 			get {
 				if (_rootEntity == Entity.Null) {
-					World world = World.DefaultGameObjectInjectionWorld;
-					EntityManager entityManager = world.EntityManager;
+					EntityManager entityManager = SkycladUtility.ECS.EntityManager;
 
 					_rootEntity = entityManager.CreateEntity(
 						entityManager.CreateArchetype(
@@ -27,38 +27,46 @@ namespace skyclad {
 			}
 		}
 
-		public static void Start() {
+		internal static void AddToRoot(Entity entity) {
 			EntityManager entityManager = SkycladUtility.ECS.EntityManager;
-
-			EntityArchetype archetype = entityManager.CreateArchetype(
-				ComponentType.ReadWrite<RequestLoadDioramaComponent>()
-			);
-
-			foreach(int dioramaId in DioramaId.LaunchDioramas) {
-				Entity entity = entityManager.CreateEntity(archetype);
-				entityManager.SetComponentData(
-					entity, 
-					new RequestLoadDioramaComponent {
-						id = dioramaId,
-					}
-				);
+			if (!entityManager.HasComponent<Parent>(entity)) {
+				entityManager.AddComponent<Parent>(entity);
 			}
+
+			entityManager.SetComponentData(
+				entity,
+				new Parent { Value = RootEntity, }
+			);
 		}
 
-		public static void End() {
-			EntityManager entityManager = SkycladUtility.ECS.EntityManager;
-			EntityArchetype archetype = entityManager.CreateArchetype(
-				ComponentType.ReadWrite<RequestUnloadDioramaComponent>()
-			);
-			foreach(int dioramaId in DioramaId.LaunchDioramas) {
-				Entity entity = entityManager.CreateEntity(archetype);
-				entityManager.SetComponentData(
-					entity,
-					new RequestUnloadDioramaComponent {
-						id = dioramaId,
-					}
-				);
-			}
+		/// <summary>
+		/// アプリケーション開始
+		/// </summary>
+		[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+		private static void LaunchGame() {
+			lifecycle.LifecycleFunctions.Launch(SkycladUtility.ECS.World);
+			Application.quitting += QuitGame;
+		}
+
+		/// <summary>
+		/// アプリケーション終了
+		/// </summary>
+		private static void QuitGame() {
+			lifecycle.LifecycleFunctions.Quit(SkycladUtility.ECS.World);
+		}
+
+		/// <summary>
+		/// インゲーム開始
+		/// </summary>
+		internal static void EnterAdventure() {
+			lifecycle.LifecycleFunctions.EnterAdventure(SkycladUtility.ECS.World);
+		}
+
+		/// <summary>
+		/// インゲーム終了
+		/// </summary>
+		internal static void ExitAdventure() {
+			lifecycle.LifecycleFunctions.ExitAdventure(SkycladUtility.ECS.World);
 		}
 	}
 }

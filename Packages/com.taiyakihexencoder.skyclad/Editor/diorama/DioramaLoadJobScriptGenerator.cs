@@ -1,7 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
-using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEngine;
 
@@ -148,11 +146,32 @@ namespace skyclad.editor {
 						gen.AppendLine($"collider = BlobAssetReference<Collider>.Null,");
 					}
 
+					gen.AppendLine($"hasController = {(character.type.hasController ? "true" : "false")},");
+
 					gen.AppendLine($"dioramaId = DioramaId.{dioramaName}");
 				}
 				gen.AppendLine($"}}");
 			}
 			gen.AppendLine($");");
+
+			if (character.type.hasCollider) {
+				gen.AppendLine($"DynamicBuffer<RequestCharacterPrefabHitBox> {characterName}HitBoxBuffer");
+				using(gen.IndentBlock) {
+					gen.AppendLine($" = commandBuffer.AddBuffer<RequestCharacterPrefabHitBox>(entityLoadCharacter{characterName}PrefabRequest);");
+				}
+				foreach(CharacterProjectSettings.CharacterHitBox hitBox in character.hitBoxes) {
+					gen.AppendLine($"{characterName}HitBoxBuffer.Add(");
+					using(gen.IndentBlock) {
+						gen.AppendLine($"new RequestCharacterPrefabHitBox {{");
+						using(gen.IndentBlock) {
+							gen.AppendLine($"extent = new float3({hitBox.extent.x}f, {hitBox.extent.y}f, {hitBox.extent.z}f),");
+							gen.AppendLine($"offset = new float3({hitBox.offset.x}f, {hitBox.offset.y}f, {hitBox.offset.z}f),");
+						}
+						gen.AppendLine($"}}");
+					}
+					gen.AppendLine($");");
+				}
+			}
 
 			gen.AppendLine($"DynamicBuffer<SpawnAfterCreatePrefabBufferElement> {characterName}SpawnBuffer");
 			using (gen.IndentBlock) {
@@ -203,6 +222,16 @@ namespace skyclad.editor {
 						controllerParameters[n] = controllerValuesProperty.Of(n).stringValue;
 					}
 
+					SerializedProperty hitBoxesProperty = characterUnitProperty.Of("hitBoxes");
+					CharacterProjectSettings.CharacterHitBox[] hitBoxes = new CharacterProjectSettings.CharacterHitBox[hitBoxesProperty.arraySize];
+					for(int n = 0; n < hitBoxesProperty.arraySize; ++n) {
+						SerializedProperty hitBoxProperty = hitBoxesProperty.Of(n);
+						hitBoxes[n] = new CharacterProjectSettings.CharacterHitBox{
+							extent = hitBoxProperty.Of("extent").vector3Value,
+							offset = hitBoxProperty.Of("offset").vector3Value,
+						};
+					}
+
 					table.Add(
 						guid,
 						new CharacterProjectSettings.Unit {
@@ -224,7 +253,8 @@ namespace skyclad.editor {
 							controller = new CharacterProjectSettings.ParameterInfo {
 								names = controllerParameterNames,
 								values = controllerParameters,
-							}
+							},
+							hitBoxes = hitBoxes,
 						}
 					);
 				}

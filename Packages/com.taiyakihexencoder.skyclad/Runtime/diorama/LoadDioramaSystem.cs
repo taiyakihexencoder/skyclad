@@ -27,7 +27,7 @@ namespace skyclad {
 				.Build(ref state);
 
 			physicsCharacterQuery = new EntityQueryBuilder(Allocator.Temp)
-				.WithAll<PhysicsCollider, CharacterSpawnParameterElement>()
+				.WithAll<PhysicsCollider, CharacterSpawnParameterElement, LinkedEntityGroup>()
 				.Build(ref state);
 
 			state.RequireForUpdate<RequestLoadDioramaComponent>();
@@ -66,14 +66,16 @@ namespace skyclad {
 		partial struct EnablePhysicsJob : IJobEntity {
 			public EntityCommandBuffer.ParallelWriter commandBuffer;
 
-			void Execute(in Entity entity, [EntityIndexInQuery] int sortKey) {
-				commandBuffer.SetSharedComponent(
-					sortKey,
-					entity, 
-					new PhysicsWorldIndex {
-						Value = SkycladUtility.ECS.ENABLED_PHYSICS_INDEX,
-					}
-				);
+			void Execute([EntityIndexInQuery] int sortKey, ref DynamicBuffer<LinkedEntityGroup> linkedEntityGroup) {
+				foreach(LinkedEntityGroup member in linkedEntityGroup) {
+					commandBuffer.SetSharedComponent(
+						sortKey,
+						member.Value, 
+						new PhysicsWorldIndex {
+							Value = SkycladUtility.ECS.ENABLED_PHYSICS_INDEX,
+						}
+					);
+				}
 			}
 		}
 	}

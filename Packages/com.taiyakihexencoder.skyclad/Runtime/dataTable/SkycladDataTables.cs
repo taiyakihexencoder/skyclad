@@ -41,7 +41,7 @@ namespace skyclad {
 		/// インゲームを開始する際の準備処理
 		/// 終了次第各テーブルが利用できる
 		/// </summary>
-		internal static void OnStartIngame() {
+		internal static void OnStartAdventure() {
 			InitIngameTables();
 		}
 
@@ -49,7 +49,7 @@ namespace skyclad {
 		/// インゲーム終了時の処理
 		/// テーブルを使用不能にしてから破棄する
 		/// </summary>
-		internal static void OnEndIngame() {
+		internal static void OnEndAdventure() {
 			DisposeIngameTables();
 		}
 

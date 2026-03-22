@@ -9,7 +9,13 @@ namespace skyclad {
 		public FixedString64Bytes name;
 		public int statusIndex;
 		public BlobAssetReference<Collider> collider;
+		public bool hasController;
 		public int dioramaId;
+	}
+
+	public struct RequestCharacterPrefabHitBox : IBufferElementData {
+		public float3 extent;
+		public float3 offset;
 	}
 
 	public struct RequestUnloadCharacterPrefabComponent : IComponentData {
@@ -43,6 +49,13 @@ namespace skyclad {
 	public struct CharacterPrefabLoadCounterComponent : IComponentData, ICleanupComponentData {
 		public int characterId;
 		public int loadCounter;
+	}
+
+	/// <summary>
+	/// ヒットボックス
+	/// </summary>
+	public struct CharacterHitBox : IComponentData, IEnableableComponent {
+		
 	}
 
 	/// <summary>

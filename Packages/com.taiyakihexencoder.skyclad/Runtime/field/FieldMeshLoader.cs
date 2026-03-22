@@ -77,12 +77,7 @@ namespace skyclad.field {
 						} else {
 							colliders = new BlobAssetReference<Collider>[meshes.Count];
 							for(int i = 0; i < meshes.Count; ++i) {
-								if (i != 0)
-								{
-									colliders[i] = MeshCollider.Create(meshes[i], filter, material);
-								} else {
-									colliders[i] = BoxCollider.Create(new BoxGeometry{ Center = new float3(0.0f, -5.0f, 0f), Orientation = quaternion.identity, Size = new float3(10, 1, 10)});
-								}
+								colliders[i] = MeshCollider.Create(meshes[i], filter, material);
 								colliders[i].Value.SetCollisionResponse(CollisionResponsePolicy.Collide);
 							}
 							_blobs.Add(fieldMeshId, colliders);

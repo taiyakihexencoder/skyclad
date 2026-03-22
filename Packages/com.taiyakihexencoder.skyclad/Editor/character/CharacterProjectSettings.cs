@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using Unity.Mathematics;
+using UnityEngine;
 
 namespace skyclad.editor {
 	[System.Serializable]
@@ -47,6 +48,11 @@ namespace skyclad.editor {
 			/// コントローラーパラメーター
 			/// </summary>
 			public ParameterInfo controller;
+
+			/// <summary>
+			/// ヒットボックス
+			/// </summary>
+			public CharacterHitBox[] hitBoxes;
 		}
 
 		internal enum ParameterType {
@@ -147,6 +153,12 @@ namespace skyclad.editor {
 					_parameters = parameterDefs,
 				};
 			}
+		}
+
+		[System.Serializable]
+		public struct CharacterHitBox {
+			public Vector3 offset;
+			public Vector3 extent;
 		}
 
 		[SerializeField]

@@ -375,6 +375,38 @@ namespace skyclad.editor {
 				} else {
 					colliderProperty.stringValue = "";
 				}
+
+				// HitBox
+				SkycladEditorGUI.Layout.Label("HitBox");
+				using (SkycladEditorGUI.Layout.Box(new RectOffset(16,16,0,0))) {
+					using(SkycladEditorGUI.Layout.Horizontal) {
+						SkycladEditorGUI.Layout.Label("Extent", 250.0f);
+						SkycladEditorGUI.Layout.Label("Offset", 250.0f);
+					}
+					SerializedProperty hitBoxesProperty = unitProperty.Of("hitBoxes");
+					for(int i = 0; i < hitBoxesProperty.arraySize; ++i) {
+						using (SkycladEditorGUI.Layout.Horizontal) {
+							SerializedProperty hitBoxProperty = hitBoxesProperty.Of(i);
+							SerializedProperty extentProperty = hitBoxProperty.Of("extent");
+							SerializedProperty offsetProperty = hitBoxProperty.Of("offset");
+
+							extentProperty.vector3Value = EditorGUILayout.Vector3Field("", extentProperty.vector3Value, GUILayout.Width(250.0f));
+							offsetProperty.vector3Value = EditorGUILayout.Vector3Field("", offsetProperty.vector3Value, GUILayout.Width(250.0f));
+
+							if (SkycladEditorGUI.Layout.MinusButton()) {
+								hitBoxesProperty.DeleteArrayElementAtIndex(i);
+								break;
+							}
+						}
+					}
+					if (SkycladEditorGUI.Layout.PlusButton()) {
+						hitBoxesProperty.Add((p) => {
+							p.Of("extent").vector3Value = Vector3.zero;
+							p.Of("offset").vector3Value = Vector3.zero;
+						});
+					}
+
+				}
 			}
 
 			if (unitProperty.Of("type.hasController").boolValue) {

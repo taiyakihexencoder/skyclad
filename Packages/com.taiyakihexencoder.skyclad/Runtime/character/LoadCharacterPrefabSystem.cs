@@ -20,6 +20,7 @@ namespace skyclad.character {
 
 		private EntityArchetype prefabArchetype;
 		private EntityArchetype spawnerArchetype;
+		private EntityArchetype hitBoxArchetype;
 
 		void ISystem.OnCreate(ref SystemState state) {
 			prefabArchetype = state.EntityManager.CreateArchetype(
@@ -30,13 +31,17 @@ namespace skyclad.character {
 					ComponentType.ReadWrite<LocalToWorld>(),
 					ComponentType.ReadWrite<CharacterSpawnParameterElement>(),
 					ComponentType.ReadWrite<CharacterStatusMasterReference>(),
+					ComponentType.ReadWrite<control.CharacterControlInstruction>(),
+					ComponentType.ReadWrite<control.SkycladCharacterControlComponent>(),
+					ComponentType.ReadWrite<control.CharacterActionCueBufferElement>(),
 					ComponentType.ReadWrite<PhysicsCollider>(),
 					ComponentType.ReadWrite<PhysicsMass>(),
 					ComponentType.ReadWrite<PhysicsVelocity>(),
 					ComponentType.ReadWrite<PhysicsGravityFactor>(),
 					ComponentType.ReadWrite<Parent>(),
+					ComponentType.ReadWrite<LinkedEntityGroup>(),
 					ComponentType.ReadWrite<collider.ColliderCollisionEvent>(),
-					ComponentType.ReadWrite<collider.ColliderCollisionStayEvent>()
+					ComponentType.ReadWrite<collider.ColliderCollisionStayEvent>(),
 				}
 			);
 
@@ -49,6 +54,19 @@ namespace skyclad.character {
 				}
 			);
 
+			hitBoxArchetype = state.EntityManager.CreateArchetype(
+				new ComponentType[] {
+					ComponentType.ReadWrite<CharacterHitBox>(),
+					ComponentType.ReadWrite<DisposableGeometry>(),
+					ComponentType.ReadWrite<LocalTransform>(),
+					ComponentType.ReadWrite<LocalToWorld>(),
+					ComponentType.ReadWrite<Parent>(),
+					ComponentType.ReadWrite<PhysicsCollider>(),
+					ComponentType.ReadWrite<collider.ColliderTriggerEvent>(),
+					ComponentType.ReadWrite<collider.ColliderTriggerEnterEvent>(),
+				}
+			);
+
 			// parent prefab
 			prefabsParentEntity = state.EntityManager.CreateEntity(
 				state.EntityManager.CreateArchetype(
@@ -57,8 +75,7 @@ namespace skyclad.character {
 					ComponentType.ReadWrite<Parent>()
 				)
 			);
-
-			state.EntityManager.SetComponentData(prefabsParentEntity, new Parent { Value = SkycladWorld.RootEntity, });
+			SkycladWorld.AddToRoot(prefabsParentEntity);
 			#if UNITY_EDITOR
 			state.EntityManager.SetName(prefabsParentEntity, "Prefabs");
 			#endif
@@ -71,7 +88,7 @@ namespace skyclad.character {
 					ComponentType.ReadWrite<Parent>()
 				)
 			);
-			state.EntityManager.SetComponentData(spawnersParentEntity, new Parent { Value = SkycladWorld.RootEntity, });
+			SkycladWorld.AddToRoot(spawnersParentEntity);
 			#if UNITY_EDITOR
 			state.EntityManager.SetName(spawnersParentEntity, "Spawners");
 			#endif
@@ -97,8 +114,16 @@ namespace skyclad.character {
 			EntityCommandBuffer commandBuffer = CreateCommandBuffer(ref state);
 
 			// 存在チェック、なければ生成する
-			foreach ((RefRO<RequestLoadCharacterPrefabComponent> request, DynamicBuffer<SpawnAfterCreatePrefabBufferElement> spawnAfterCreate) 
-				in SystemAPI.Query<RefRO<RequestLoadCharacterPrefabComponent>, DynamicBuffer<SpawnAfterCreatePrefabBufferElement>>()) {
+			foreach ((
+				RefRO<RequestLoadCharacterPrefabComponent> request, 
+				DynamicBuffer<RequestCharacterPrefabHitBox> hitBoxes,
+				DynamicBuffer<SpawnAfterCreatePrefabBufferElement> spawnAfterCreate
+			) in SystemAPI.Query<
+					RefRO<RequestLoadCharacterPrefabComponent>, 
+					DynamicBuffer<RequestCharacterPrefabHitBox>,
+					DynamicBuffer<SpawnAfterCreatePrefabBufferElement>
+				>()
+			) {
 
 				Entity prefabEntity = Entity.Null;
 				foreach (RefRO<CharacterPrefabLoadCounterComponent> prefab
@@ -110,7 +135,7 @@ namespace skyclad.character {
 
 				if (prefabEntity == Entity.Null) {
 					// インスタンスを生成
-					prefabEntity = CreatePrefab(commandBuffer, request.ValueRO);
+					prefabEntity = CreatePrefab(commandBuffer, request.ValueRO, hitBoxes);
 
 					// Spawnerを生成
 					CreateSpawner(commandBuffer, request.ValueRO.characterId, request.ValueRO.name, prefabEntity);
@@ -162,9 +187,13 @@ namespace skyclad.character {
 
 		private Entity CreatePrefab(
 			EntityCommandBuffer commandBuffer, 
-			in RequestLoadCharacterPrefabComponent request
+			in RequestLoadCharacterPrefabComponent request,
+			in DynamicBuffer<RequestCharacterPrefabHitBox> hitBoxes
 		) {
 			Entity prefabEntity = commandBuffer.CreateEntity(prefabArchetype);
+			DynamicBuffer<LinkedEntityGroup> linkedEntityGroup = commandBuffer.SetBuffer<LinkedEntityGroup>(prefabEntity);
+			linkedEntityGroup.Add(new LinkedEntityGroup{ Value = prefabEntity, });
+
 			commandBuffer.SetComponent(
 				prefabEntity, 
 				new Parent{ Value = prefabsParentEntity, }
@@ -189,6 +218,31 @@ namespace skyclad.character {
 				commandBuffer.RemoveComponent<CharacterStatusMasterReference>(prefabEntity);
 			}
 
+			if (request.hasController) {
+				commandBuffer.SetComponent(
+					prefabEntity, 
+					new control.SkycladCharacterControlComponent {
+						isGrounded = false,
+						normal = new float3(0.0f, 1.0f, 0.0f),
+						snapToGround = false,
+						ignoreSnapToGround = false,
+						force = float3.zero,
+						velocityChanges = float3.zero,
+					}
+				);
+				commandBuffer.SetComponent(
+					prefabEntity,
+					new control.CharacterControlInstruction {
+						moveCorrectionSeconds = 1.0f,
+						preferMove = float3.zero,
+					}
+				);
+			} else {
+				commandBuffer.RemoveComponent<control.CharacterControlInstruction>(prefabEntity);
+				commandBuffer.RemoveComponent<control.SkycladCharacterControlComponent>(prefabEntity);
+				commandBuffer.RemoveComponent<control.CharacterActionCueBufferElement>(prefabEntity);
+			}
+
 			if (request.collider != BlobAssetReference<Collider>.Null) {
 				commandBuffer.SetComponent(
 					prefabEntity,
@@ -210,6 +264,48 @@ namespace skyclad.character {
 					prefabEntity,
 					new PhysicsWorldIndex{ Value = SkycladUtility.ECS.DISABLED_PHYSICS_INDEX, }
 				);
+
+				foreach(RequestCharacterPrefabHitBox hitBox in hitBoxes) {
+					Entity hitBoxEntity = commandBuffer.CreateEntity(hitBoxArchetype);
+					commandBuffer.SetComponent(
+						hitBoxEntity, 
+						new Parent{ Value = prefabEntity, }
+					);
+					commandBuffer.SetComponent(
+						hitBoxEntity, 
+						LocalTransform.FromPosition(hitBox.offset)
+					);
+					BlobAssetReference<Collider> geometry = BoxCollider.Create(
+						geometry: new BoxGeometry {
+							BevelRadius = 0.0f,
+							Orientation = quaternion.identity,
+							Center = float3.zero,
+							Size = hitBox.extent,
+						}, 
+						filter: new CollisionFilter {
+							BelongsTo = 0,
+							CollidesWith = 0,
+						},
+						material: Material.Default
+					);
+					geometry.Value.SetCollisionResponse(CollisionResponsePolicy.RaiseTriggerEvents);
+
+					commandBuffer.SetComponent(
+						hitBoxEntity,
+						new PhysicsCollider { Value = geometry, }
+					);
+					commandBuffer.SetComponent(
+						hitBoxEntity,
+						new DisposableGeometry { collider = geometry, }
+					);
+					commandBuffer.AddSharedComponent(
+						hitBoxEntity,
+						new PhysicsWorldIndex { Value = SkycladUtility.ECS.DISABLED_PHYSICS_INDEX, }
+					);
+
+					// Prefab削除時に一緒に削除する
+					linkedEntityGroup.Add(new LinkedEntityGroup { Value = hitBoxEntity, });
+				}
 			} else {
 				commandBuffer.RemoveComponent<PhysicsCollider>(prefabEntity);
 				commandBuffer.RemoveComponent<PhysicsMass>(prefabEntity);
