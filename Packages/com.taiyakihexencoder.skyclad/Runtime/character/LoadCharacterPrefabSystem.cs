@@ -30,7 +30,7 @@ namespace skyclad.character {
 					ComponentType.ReadWrite<LocalTransform>(),
 					ComponentType.ReadWrite<LocalToWorld>(),
 					ComponentType.ReadWrite<CharacterSpawnParameterElement>(),
-					ComponentType.ReadWrite<CharacterStatusMasterReference>(),
+					ComponentType.ReadWrite<CharacterStatusComponent>(),
 					ComponentType.ReadWrite<control.CharacterControlInstruction>(),
 					ComponentType.ReadWrite<control.SkycladCharacterControlComponent>(),
 					ComponentType.ReadWrite<control.CharacterActionCueBufferElement>(),
@@ -205,18 +205,6 @@ namespace skyclad.character {
 				}
 			);
 
-			if (request.statusIndex >= 0) {
-				commandBuffer.SetComponent(
-					prefabEntity,
-					new CharacterStatusMasterReference {
-						blob = SkycladDataTables.characterStatus,
-						index = request.characterId,
-					}
-				);
-			} else {
-				commandBuffer.RemoveComponent<CharacterStatusMasterReference>(prefabEntity);
-			}
-
 			if (request.hasController) {
 				commandBuffer.SetComponent(
 					prefabEntity, 
@@ -318,12 +306,12 @@ namespace skyclad.character {
 			commandBuffer.SetName(prefabEntity, request.name);
 			#endif
 
-			SetUniquePrefabParameter(commandBuffer, prefabEntity, request.characterId);
+			SetUniquePrefabParameter(commandBuffer, prefabEntity, request);
 
 			return prefabEntity;
 		}
 
-		partial void SetUniquePrefabParameter(EntityCommandBuffer commandBuffer, Entity prefab, int characterId);
+		partial void SetUniquePrefabParameter(EntityCommandBuffer commandBuffer, Entity prefab, in RequestLoadCharacterPrefabComponent request);
 
 		private void CreateSpawner(EntityCommandBuffer commandBuffer, int characterId, FixedString64Bytes name, Entity prefab) {
 			Entity spawnerEntity = commandBuffer.CreateEntity(spawnerArchetype);

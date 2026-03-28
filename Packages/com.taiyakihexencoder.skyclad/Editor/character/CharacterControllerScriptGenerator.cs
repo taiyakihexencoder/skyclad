@@ -65,6 +65,20 @@ namespace skyclad.editor {
 			}
 
 			SerializedProperty characterUnitsProperty = serializedObject.FindProperty("_character._units");
+			
+			SerializedProperty dynamicParametersProperty = serializedObject.FindProperty("_character._dynamicParameters");
+			SerializedProperty statusParameterUnitsProperty = serializedObject.FindProperty("_character._statusParameterUnits");
+			List<string> dynamicParameterNames = new List<string>();
+			for(int i = 0; i < dynamicParametersProperty.arraySize; ++i) {
+				string guid = dynamicParametersProperty.Of(i).stringValue;
+				for (int j = 0; j < statusParameterUnitsProperty.arraySize; ++j) {
+					SerializedProperty statusParameterUnitProperty = statusParameterUnitsProperty.Of(j);
+					if (guid == statusParameterUnitProperty.Of("guid").stringValue) {
+						dynamicParameterNames.Add(statusParameterUnitProperty.Of("name").stringValue);
+						break;
+					}
+				}
+			}
 
 			SourceCodeGenerator gen = new SourceCodeGenerator();
 
@@ -75,9 +89,35 @@ namespace skyclad.editor {
 			using (gen.IndentBlock) {
 				gen.AppendLine($"public partial struct LoadCharacterPrefabSystem {{");
 				using (gen.IndentBlock) {
-					gen.AppendLine($"partial void SetUniquePrefabParameter(EntityCommandBuffer commandBuffer, Entity prefab, int characterId) {{");
+					gen.AppendLine($"partial void SetUniquePrefabParameter(EntityCommandBuffer commandBuffer, Entity prefab, in RequestLoadCharacterPrefabComponent request) {{");
 					using (gen.IndentBlock) {
-						gen.AppendLine($"switch (characterId) {{");
+						gen.AppendLine($"if (request.statusIndex >= 0) {{");
+						using (gen.IndentBlock) {
+							gen.AppendLine($"CharacterStatus status = SkycladDataTables.characterStatus.Value.records[request.statusIndex];");
+							gen.AppendLine($"commandBuffer.SetComponent(");
+							using (gen.IndentBlock) {
+								gen.AppendLine($"prefab,");
+								gen.AppendLine($"new CharacterStatusComponent {{");
+								using (gen.IndentBlock) {
+									gen.AppendLine($"masterData = SkycladDataTables.characterStatus,");
+									gen.AppendLine($"masterDataIndex = request.statusIndex,");
+									foreach(string name in dynamicParameterNames) {
+										gen.AppendLine($"{name} = status.{name},");
+									}
+								}
+								gen.AppendLine($"}}");
+							}
+							gen.AppendLine($");");
+						}
+						gen.AppendLine($"}} else {{");
+						using (gen.IndentBlock) {
+							gen.AppendLine($"commandBuffer.RemoveComponent<CharacterStatusComponent>(prefab);");
+						}
+
+						gen.AppendLine($"}}");
+
+						gen.AppendLine($"");
+						gen.AppendLine($"switch (request.characterId) {{");
 						using (gen.IndentBlock) {
 							for(int i = 0; i < characterUnitsProperty.arraySize; ++i) {
 								SerializedProperty characterUnitProperty = characterUnitsProperty.Of(i);

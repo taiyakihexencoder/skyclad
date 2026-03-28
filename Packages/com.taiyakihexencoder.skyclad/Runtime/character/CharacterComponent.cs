@@ -1,4 +1,5 @@
-﻿using Unity.Collections;
+﻿using System.Runtime.InteropServices;
+using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Physics;
@@ -61,11 +62,12 @@ namespace skyclad {
 	}
 
 	/// <summary>
-	/// キャラクターステータスのマスターデータへの参照
+	/// インスタンス用のキャラクターステータス
 	/// </summary>
-	public struct CharacterStatusMasterReference : IComponentData {
-		public BlobAssetReference<SkycladDataBlob<CharacterStatus>> blob;
-		public int index;
+	[StructLayout(LayoutKind.Auto)]
+	public partial struct CharacterStatusComponent : IComponentData {
+		public BlobAssetReference<SkycladDataBlob<CharacterStatus>> masterData;
+		public int masterDataIndex;
 	}
 
 	/// <summary>

@@ -17,7 +17,14 @@ namespace skyclad.editor {
 			SerializedProperty parametersProperty = serializedObject.FindProperty("_character._statusParameterUnits");
 			SerializedProperty unitsProperty = serializedObject.FindProperty("_character._units");
 
-			writer.Write(unitsProperty.arraySize);
+			int statusUnitCount = 0;
+			for (int i = 0; i < unitsProperty.arraySize; ++i) {
+				if (unitsProperty.Of(i).Of("type.hasStatus").boolValue) {
+					statusUnitCount++;
+				}
+			}
+
+			writer.Write(statusUnitCount);
 
 			List<ParameterDefs> parameters = new List<ParameterDefs>();
 			List<System.Action<BinaryWriter, string>> writeAction = new List<System.Action<BinaryWriter, string>>();
@@ -61,7 +68,7 @@ namespace skyclad.editor {
 
 			for (int i = 0; i < unitsProperty.arraySize; ++i) {
 				unitProperty = unitsProperty.Of(i);
-				if (! unitProperty.Of("type").Of("hasStatus").boolValue) {
+				if (! unitProperty.Of("type.hasStatus").boolValue) {
 					continue;
 				}
 				statusProperty = unitsProperty.Of(i).Of("status");
