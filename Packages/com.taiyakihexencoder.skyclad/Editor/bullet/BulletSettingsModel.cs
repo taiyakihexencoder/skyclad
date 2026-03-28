@@ -98,6 +98,7 @@ namespace skyclad.editor {
 						SerializedProperty unitProperty = unitsProperty.Of(j);
 						SerializedProperty parameterNamesProperty = unitProperty.Of("parameter.names");
 						SerializedProperty parameterValuesProperty = unitProperty.Of("parameter.values");
+						SerializedProperty styleProperty = unitProperty.Of("style");
 
 						ParameterInfo parameterInfo = new ParameterInfo {
 							names = new string[parameterNamesProperty.arraySize],
@@ -112,6 +113,11 @@ namespace skyclad.editor {
 							name = unitProperty.Of("name").stringValue,
 							hitBoxType = (BulletHitBoxType) unitProperty.Of("hitBoxType").intValue,
 							extent = unitProperty.Of("extent").vector3Value,
+							style = new bullet.BulletStyle {
+								lifeTime = styleProperty.Of("lifeTime").floatValue,
+								speed = styleProperty.Of("speed").floatValue,
+								trail = (bullet.BulletTrail)styleProperty.Of("trail").intValue,
+							},
 							parameter = parameterInfo,
 						};
 					}

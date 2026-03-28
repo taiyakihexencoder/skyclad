@@ -12,6 +12,8 @@ namespace skyclad.bullet {
 		public int bulletId;
 		public BlobAssetReference<SkycladDataBlob<BulletParameter>> master;
 		public int masterIndex;
+		public float elapsedSeconds;
+		public BulletStyle style;
 	}
 
 	/// <summary>
@@ -34,6 +36,7 @@ namespace skyclad.bullet {
 		public int dataIndex;
 		public BulletHitBoxType hitBoxType;
 		public float3 extent;
+		public BulletStyle style;
 	}
 
 	/// <summary>

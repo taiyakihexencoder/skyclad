@@ -215,6 +215,7 @@ namespace skyclad.character {
 						ignoreSnapToGround = false,
 						force = float3.zero,
 						velocityChanges = float3.zero,
+						lookDirection = quaternion.identity,
 					}
 				);
 				commandBuffer.SetComponent(
@@ -222,6 +223,7 @@ namespace skyclad.character {
 					new control.CharacterControlInstruction {
 						moveCorrectionSeconds = 1.0f,
 						preferMove = float3.zero,
+						overrideLookDirection = new quaternion(float4.zero),
 					}
 				);
 			} else {

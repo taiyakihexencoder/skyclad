@@ -36,6 +36,11 @@ namespace skyclad.control {
 		/// スピードの変動
 		/// </summary>
 		public float3 velocityChanges;
+
+		/// <summary>
+		/// 向く方向
+		/// </summary>
+		public quaternion lookDirection;
 	}
 
 	/// <summary>
@@ -51,6 +56,12 @@ namespace skyclad.control {
 		/// 望ましい移動速度
 		/// </summary>
 		public float3 preferMove;
+
+		/// <summary>
+		///	見る方向の上書き。
+		///	指定されていない場合は移動で自動的に変わる
+		/// </summary>
+		public quaternion overrideLookDirection;
 	}
 
 	/// <summary>

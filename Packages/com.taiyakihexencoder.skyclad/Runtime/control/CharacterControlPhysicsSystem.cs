@@ -17,7 +17,7 @@ namespace skyclad.control {
 		private EntityQuery gravityCorrectionQuery;
 		private EntityQuery acceptInstructionQuery;
 		private EntityQuery digestCharacterActionCueQuery;
-		private EntityQuery applyForceQuery;
+		private EntityQuery applyPhysicalQuery;
 		private EntityQuery resetEntityQuery;
 
 		void ISystem.OnCreate(ref SystemState state) {
@@ -41,9 +41,9 @@ namespace skyclad.control {
 				.WithAll<PhysicsVelocity, PhysicsGravityFactor, CharacterActionCueBufferElement>()
 				.WithAllRW<SkycladCharacterControlComponent>()
 				.Build(ref state);
-			applyForceQuery = new EntityQueryBuilder(Allocator.Temp)
-				.WithAll<PhysicsMass, SkycladCharacterControlComponent>()
-				.WithAllRW<PhysicsVelocity>()
+			applyPhysicalQuery = new EntityQueryBuilder(Allocator.Temp)
+				.WithAll<PhysicsMass, SkycladCharacterControlComponent, LocalToWorld>()
+				.WithAllRW<PhysicsVelocity, LocalTransform>()
 				.Build(ref state);
 			resetEntityQuery = new EntityQueryBuilder(Allocator.Temp)
 				.WithAllRW<SkycladCharacterControlComponent>()
@@ -79,6 +79,7 @@ namespace skyclad.control {
 				state.Dependency = new AcceptInstructionJob {
 					epsilon = MOVE_EPSILON,
 					dt = dt,
+					upward = upward,
 				}.ScheduleParallel(acceptInstructionQuery, state.Dependency);
 
 				state.Dependency = new DigestCharacterActionCueJob {
@@ -86,9 +87,9 @@ namespace skyclad.control {
 					upward = upward,
 				}.ScheduleParallel(digestCharacterActionCueQuery, state.Dependency);
 
-				state.Dependency = new ApplyForceJob {
+				state.Dependency = new ApplyPhysicalJob {
 					dt = dt,
-				}.ScheduleParallel(applyForceQuery, state.Dependency);
+				}.ScheduleParallel(applyPhysicalQuery, state.Dependency);
 
 				state.Dependency = new ResetEntityJob {
 				
@@ -228,6 +229,9 @@ namespace skyclad.control {
 		partial struct AcceptInstructionJob : IJobEntity {
 			[ReadOnly] public float epsilon;
 			[ReadOnly] public float dt;
+			[ReadOnly] public float3 upward;
+
+			private const float LOOK_DIRECTION_THRESHOLD = 0.2f;
 
 			void Execute(
 				RefRO<PhysicsVelocity> physicsVelocity,
@@ -242,8 +246,13 @@ namespace skyclad.control {
 					characterControlInstruction.ValueRO.preferMove,
 					physicsVelocity.ValueRO.Linear
 				);
-
 				characterControl.ValueRW.velocityChanges += dv;
+
+				if (math.any(characterControlInstruction.ValueRO.overrideLookDirection.value != float4.zero)) {
+					characterControl.ValueRW.lookDirection = characterControlInstruction.ValueRO.overrideLookDirection;
+				} else if (math.lengthsq(characterControlInstruction.ValueRO.preferMove) > LOOK_DIRECTION_THRESHOLD * LOOK_DIRECTION_THRESHOLD) {
+					characterControl.ValueRW.lookDirection = quaternion.LookRotation(characterControlInstruction.ValueRO.preferMove, upward);
+				}
 			}
 
 			/// <summary>
@@ -332,17 +341,33 @@ namespace skyclad.control {
 
 		/// <summary>
 		/// キャラクターに設定された力の情報を移動に反映する
+		/// キャラクターの向きを更新する
 		/// </summary>
-		partial struct ApplyForceJob : IJobEntity {
+		partial struct ApplyPhysicalJob : IJobEntity {
 			[ReadOnly] public float dt;
 
 			void Execute(
 				RefRO<PhysicsMass> physicsMass,
 				RefRO<SkycladCharacterControlComponent> characterControl,
+				RefRO<LocalToWorld> localToWorld,
+				RefRW<LocalTransform> localTransform,
 				RefRW<PhysicsVelocity> physicsVelocity
 			) {
 				float3 dv = characterControl.ValueRO.force * dt * physicsMass.ValueRO.InverseMass;
 				physicsVelocity.ValueRW.Linear += dv + characterControl.ValueRO.velocityChanges;
+
+				UpdateLocalRotation(localTransform, localToWorld, characterControl.ValueRO.lookDirection);
+			}
+
+			private void UpdateLocalRotation(
+				RefRW<LocalTransform> localTransform, 
+				RefRO<LocalToWorld> localToWorld,
+				in quaternion direction
+			) {
+				if (math.any(direction.value != float4.zero)) {
+					quaternion parentRot =  math.mul(localToWorld.ValueRO.Rotation, math.inverse(localTransform.ValueRO.Rotation));
+					localTransform.ValueRW.Rotation = math.mul(math.inverse(parentRot), direction);
+				}
 			}
 		}
 
@@ -355,6 +380,7 @@ namespace skyclad.control {
 			) {
 				characterControl.ValueRW.force = float3.zero;
 				characterControl.ValueRW.velocityChanges = float3.zero;
+				characterControl.ValueRW.lookDirection = float4.zero;
 			}
 		}
 	}

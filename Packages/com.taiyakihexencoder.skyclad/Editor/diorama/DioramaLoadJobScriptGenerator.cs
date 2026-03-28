@@ -184,7 +184,15 @@ namespace skyclad.editor {
 						gen.AppendLine($"name = \"{unit.name}\",");
 						gen.AppendLine($"dataIndex = BulletDataIndex.{group.name}_{unit.name}_DataIndex,");
 						gen.AppendLine($"hitBoxType = BulletHitBoxType.{unit.hitBoxType},");
-						gen.AppendLine($"extent = new float3({unit.extent.x}f, {unit.extent.y}f, {unit.extent.z}f)");
+						gen.AppendLine($"extent = new float3({unit.extent.x}f, {unit.extent.y}f, {unit.extent.z}f),");
+
+						gen.AppendLine($"style = new BulletStyle {{");
+						using (gen.IndentBlock) {
+							gen.AppendLine($"lifeTime = {unit.style.lifeTime}f,");
+							gen.AppendLine($"speed = {unit.style.speed}f,");
+							gen.AppendLine($"trail = BulletTrail.{unit.style.trail},");
+						}
+						gen.AppendLine($"}}");
 					}
 					gen.AppendLine($"}}");
 				}

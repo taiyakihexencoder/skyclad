@@ -143,89 +143,101 @@ namespace skyclad.editor {
 						}
 
 						if (foldout) {
-							SerializedProperty hitBoxTypeProperty = unitProperty.Of("hitBoxType");
-							SerializedProperty extentProperty = unitProperty.Of("extent");
-							SerializedProperty parameterProperty = unitProperty.Of("parameter");
+							using (SkycladEditor.GUI.Layout.Box(new RectOffset(20, 20, 0, 0))) {
+								SerializedProperty hitBoxTypeProperty = unitProperty.Of("hitBoxType");
+								SerializedProperty extentProperty = unitProperty.Of("extent");
+								SerializedProperty parameterProperty = unitProperty.Of("parameter");
 
-							nameProperty.stringValue = SkycladEditor.GUI.Layout.TextField(
-								text: nameProperty.stringValue,
-								SkycladEditor.Modifier
-									.Label("Name")
-							);
+								nameProperty.stringValue = SkycladEditor.GUI.Layout.TextField(
+									text: nameProperty.stringValue,
+									SkycladEditor.Modifier
+										.Label("Name")
+								);
 
-							hitBoxTypeProperty.intValue = SkycladEditor.GUI.Layout.EnumField<BulletHitBoxType>(
-								hitBoxTypeProperty.intValue, 
-								SkycladEditor.Modifier
-									.Label("HitBoxType")
-							);
+								hitBoxTypeProperty.intValue = SkycladEditor.GUI.Layout.EnumField<BulletHitBoxType>(
+									hitBoxTypeProperty.intValue, 
+									SkycladEditor.Modifier
+										.Label("HitBoxType")
+								);
 
-							switch((BulletHitBoxType)hitBoxTypeProperty.intValue) {
-								case BulletHitBoxType.Box: {
-									extentProperty.vector3Value = SkycladEditor.GUI.Layout.Vector3Field(
-										extentProperty.vector3Value,
-										SkycladEditor.Modifier
-											.Label("Extent")
-									);
-									break;
-								}
-								case BulletHitBoxType.Sphere: {
-									float radius = extentProperty.vector3Value.x;
-									radius = SkycladEditor.GUI.Layout.FloadField(
-										radius,
-										SkycladEditor.Modifier
-											.Label("Radius")
-									);
-									extentProperty.vector3Value = new Vector3(radius, 0.0f, 0.0f);
-									break;
-								}
-								case BulletHitBoxType.CylinderV: {
-									float radius = extentProperty.vector3Value.x;
-									float height = extentProperty.vector3Value.y;
-									using (SkycladEditor.GUI.Layout.Horizontal) {
+								switch((BulletHitBoxType)hitBoxTypeProperty.intValue) {
+									case BulletHitBoxType.Box: {
+										extentProperty.vector3Value = SkycladEditor.GUI.Layout.Vector3Field(
+											extentProperty.vector3Value,
+											SkycladEditor.Modifier
+												.Label("Extent")
+										);
+										break;
+									}
+									case BulletHitBoxType.Sphere: {
+										float radius = extentProperty.vector3Value.x;
 										radius = SkycladEditor.GUI.Layout.FloadField(
 											radius,
 											SkycladEditor.Modifier
 												.Label("Radius")
-												.ExpandWidth
 										);
-										height = SkycladEditor.GUI.Layout.FloadField(
-											height,
-											SkycladEditor.Modifier
-												.Label("Height")
-												.ExpandWidth
-										);
+										extentProperty.vector3Value = new Vector3(radius, 0.0f, 0.0f);
+										break;
 									}
-									extentProperty.vector3Value = new Vector3(radius, height, 0.0f);
-									break;
-								}
-								case BulletHitBoxType.CylinderH: {
-									float radius = extentProperty.vector3Value.x;
-									float height = extentProperty.vector3Value.y;
-									using (SkycladEditor.GUI.Layout.Horizontal) {
-										radius = SkycladEditor.GUI.Layout.FloadField(
-											radius,
-											SkycladEditor.Modifier
-												.Label("Radius")
-												.ExpandWidth
-										);
-										height = SkycladEditor.GUI.Layout.FloadField(
-											height,
-											SkycladEditor.Modifier
-												.Label("Height")
-												.ExpandWidth
-										);
+									case BulletHitBoxType.CylinderV: {
+										float radius = extentProperty.vector3Value.x;
+										float height = extentProperty.vector3Value.y;
+										using (SkycladEditor.GUI.Layout.Horizontal) {
+											radius = SkycladEditor.GUI.Layout.FloadField(
+												radius,
+												SkycladEditor.Modifier
+													.Label("Radius")
+													.ExpandWidth
+											);
+											height = SkycladEditor.GUI.Layout.FloadField(
+												height,
+												SkycladEditor.Modifier
+													.Label("Height")
+													.ExpandWidth
+											);
+										}
+										extentProperty.vector3Value = new Vector3(radius, height, 0.0f);
+										break;
 									}
-									extentProperty.vector3Value = new Vector3(radius, height, 0.0f);									break;
+									case BulletHitBoxType.CylinderH: {
+										float radius = extentProperty.vector3Value.x;
+										float height = extentProperty.vector3Value.y;
+										using (SkycladEditor.GUI.Layout.Horizontal) {
+											radius = SkycladEditor.GUI.Layout.FloadField(
+												radius,
+												SkycladEditor.Modifier
+													.Label("Radius")
+													.ExpandWidth
+											);
+											height = SkycladEditor.GUI.Layout.FloadField(
+												height,
+												SkycladEditor.Modifier
+													.Label("Height")
+													.ExpandWidth
+											);
+										}
+										extentProperty.vector3Value = new Vector3(radius, height, 0.0f);
+										break;
+									}
 								}
+
+								SkycladEditor.GUI.Layout.Space(height: 12);
+
+								SkycladEditor.GUI.Layout.Label("Parameters");
+
+								using(SkycladEditor.GUI.Layout.Box(new RectOffset(16,16,4,4))) {
+									ParameterInfo.Editor(parameterProperty, parameterList);
+								}
+
+								SkycladEditor.GUI.Layout.Space(height: 12);
+
+								SkycladEditor.GUI.Layout.Label("Style");
+								using(SkycladEditor.GUI.Layout.Box(new RectOffset(16,16,4,4))) {
+									BulletStyleEdit(unitProperty.Of("style"));
+								}
+
+								SkycladEditor.GUI.Layout.Space(height: 12);
 							}
-
-							SkycladEditor.GUI.Layout.Label("Parameters");
-
-							using(SkycladEditor.GUI.Layout.Box(new RectOffset(16,16,4,4))) {
-								ParameterInfo.Editor(parameterProperty, parameterList);
-							}
-
-							SkycladEditor.GUI.Layout.Space(height: 12);
 						}
 					}
 
@@ -235,6 +247,46 @@ namespace skyclad.editor {
 
 				}
 
+			}
+		}
+
+		private void BulletStyleEdit(SerializedProperty property) {
+			SerializedProperty lifeTimeProperty = property.Of("lifeTime");
+			SerializedProperty trailProperty = property.Of("trail");
+			SerializedProperty speedProperty = property.Of("speed");
+
+			using (SkycladEditor.GUI.Layout.Horizontal) {
+				SkycladEditor.GUI.Layout.Label("Life time", SkycladEditor.Modifier.Width(70.0f));
+				lifeTimeProperty.floatValue = SkycladEditor.GUI.Layout.FloadField(
+					lifeTimeProperty.floatValue,
+					SkycladEditor.Modifier
+						.Width(100.0f)
+				);
+			}
+			using (SkycladEditor.GUI.Layout.Horizontal) {
+				SkycladEditor.GUI.Layout.Label("Trail", SkycladEditor.Modifier.Width(70.0f));
+				trailProperty.intValue = SkycladEditor.GUI.Layout.EnumField<bullet.BulletTrail>(
+					trailProperty.intValue,
+					SkycladEditor.Modifier
+						.Width(100.0f)
+				);
+
+				SkycladEditor.GUI.Layout.Space(width: 30);
+
+				switch((bullet.BulletTrail)trailProperty.intValue) {
+					case bullet.BulletTrail.None: {
+						break;
+					}
+					case bullet.BulletTrail.Straight: {
+						SkycladEditor.GUI.Layout.Label("Speed");
+						speedProperty.floatValue = SkycladEditor.GUI.Layout.FloadField(
+							speedProperty.floatValue,
+							SkycladEditor.Modifier
+								.Width(100.0f)
+						);
+						break;
+					}
+				}
 			}
 		}
 	}

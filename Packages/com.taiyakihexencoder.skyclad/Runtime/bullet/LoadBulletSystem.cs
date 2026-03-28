@@ -161,6 +161,8 @@ namespace skyclad.bullet {
 								bulletId = bullet.bulletId,
 								master = SkycladDataTables.bullet,
 								masterIndex = bullet.dataIndex,
+								elapsedSeconds = 0.0f,
+								style = bullet.style,
 							}
 						);
 						BlobAssetReference<Collider> collider = BlobAssetReference<Collider>.Null;

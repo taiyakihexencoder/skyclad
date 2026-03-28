@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using skyclad.bullet;
+using UnityEngine;
 
 namespace skyclad.editor {
 	[System.Serializable]
@@ -43,6 +44,11 @@ namespace skyclad.editor {
 			/// パラメーター
 			/// </summary>
 			public ParameterInfo parameter;
+
+			/// <summary>
+			/// 動作スタイル
+			/// </summary>
+			public BulletStyle style;
 		}
 
 		[SerializeField]
