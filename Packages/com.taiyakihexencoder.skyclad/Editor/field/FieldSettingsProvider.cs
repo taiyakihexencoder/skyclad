@@ -29,7 +29,7 @@ namespace skyclad.editor {
 				SerializedProperty fieldTypeProperty = fieldProperty.Of("_fieldType");
 				EditorGUILayout.PropertyField(fieldTypeProperty, new GUIContent("Field Type"));
 
-				if (SkycladEditorGUI.Layout.Button("Generate Script")) {
+				if (SkycladEditor.GUI.Layout.Button("Generate Script")) {
 					FieldMeshGenerator.Generate((serializedObject.targetObject as SkycladProjectSettings).Field);
 				}
 			}

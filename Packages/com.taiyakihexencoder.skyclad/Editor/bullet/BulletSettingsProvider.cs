@@ -43,7 +43,7 @@ namespace skyclad.editor {
 		private void Toolbar() {
 			List<string> tabs = bulletSettingsModel.GroupNames;
 			tabs.Insert(0, "General");
-			int index = SkycladEditorGUI.Layout.Toolbar(_toolbarIndex, ref _toolbarScroll, Repaint, tabs.ToArray());
+			int index = SkycladEditor.GUI.Layout.Toolbar(_toolbarIndex, ref _toolbarScroll, Repaint, tabs.ToArray());
 
 			if (_toolbarIndex != index) {
 				_toolbarIndex = index;
@@ -125,7 +125,7 @@ namespace skyclad.editor {
 				SerializedProperty unitsProperty = property.Of("units");
 				List<ParameterDefs> parameterList = bulletSettingsModel.ParameterList;
 
-				SkycladEditorGUI.Layout.Label("Bullet");
+				SkycladEditor.GUI.Layout.Label("Bullet");
 
 				using(SkycladEditor.GUI.Layout.Box(new RectOffset(12, 12, 0, 0))) {
 					for(int i = 0; i < unitsProperty.arraySize; ++i) {

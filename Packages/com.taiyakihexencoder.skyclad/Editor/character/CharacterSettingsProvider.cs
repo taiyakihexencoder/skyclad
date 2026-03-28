@@ -3,6 +3,7 @@ using System.Reflection;
 using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEngine;
+using static skyclad.editor.SkycladEditor;
 
 namespace skyclad.editor {
 	internal sealed class CharacterSettingsProvider : SettingsProvider {
@@ -65,7 +66,7 @@ namespace skyclad.editor {
 			CharacterToolbar();
 
 			using (serializedObject.ChangeCheckScope()) {
-				using (SkycladEditorGUI.Layout.Box(new RectOffset(20, 20, 20, 20))) {
+				using (SkycladEditor.GUI.Layout.Box(new RectOffset(20, 20, 20, 20))) {
 					if (_tabIndex == GENERAL_TAB) {
 						GeneralView();
 					} else {
@@ -116,14 +117,14 @@ namespace skyclad.editor {
 		}
 
 		private void Toolbar(ref int tabIndex, ref float tabScroll, in string[] contents) {
-			tabIndex = SkycladEditorGUI.Layout.Toolbar(tabIndex, ref tabScroll, Repaint, contents);
+			tabIndex = SkycladEditor.GUI.Layout.Toolbar(tabIndex, ref tabScroll, Repaint, contents);
 		}
 
 		private void StatusDefsEditView(SerializedProperty listProperty, SerializedProperty dynamicParametersProperty) {
-			using (SkycladEditorGUI.Layout.Horizontal) {
-				SkycladEditorGUI.Layout.Label("Type", 100.0f);
-				SkycladEditorGUI.Layout.Label("Name", 160.0f);
-				SkycladEditorGUI.Layout.Label("Dynamic", 65.0f);
+			using (SkycladEditor.GUI.Layout.Horizontal) {
+				SkycladEditor.GUI.Layout.Label("Type", Modifier.Width(100.0f));
+				SkycladEditor.GUI.Layout.Label("Name", Modifier.Width(160.0f));
+				SkycladEditor.GUI.Layout.Label("Dynamic", Modifier.Width(65.0f));
 			}
 
 			bool isDynamic;
@@ -133,10 +134,10 @@ namespace skyclad.editor {
 				SerializedProperty statusTypeProperty = property.Of("parameterType");
 				SerializedProperty nameProperty = property.Of("name");
 
-				using (SkycladEditorGUI.Layout.Horizontal) {
+				using (SkycladEditor.GUI.Layout.Horizontal) {
 					EditorGUILayout.PropertyField(statusTypeProperty, new GUIContent(""), GUILayout.Width(100.0f));
 
-					SkycladEditorGUI.Layout.TextField(nameProperty, 160.0f);
+					nameProperty.stringValue = SkycladEditor.GUI.Layout.TextField(nameProperty.stringValue, Modifier.Width(160.0f));
 
 					isDynamic = false;
 					for (int j = 0; j < dynamicParametersProperty.arraySize; ++j) {
@@ -146,7 +147,14 @@ namespace skyclad.editor {
 						}
 					}
 
-					if (SkycladEditorGUI.Layout.Toggle(isDynamic, 65.0f)) {
+					if (
+						SkycladEditor.GUI.Layout.Toggle(
+							isDynamic, 
+							Modifier
+								.Width(65.0f)
+								.Align(StyleOption.HorizontalAlignment.Center)
+							)
+					) {
 						if (!isDynamic) {
 							// リストに追加
 							dynamicParametersProperty.Add(
@@ -166,7 +174,7 @@ namespace skyclad.editor {
 						}
 					}
 
-					if (SkycladEditorGUI.Layout.MinusButton()) {
+					if (SkycladEditor.GUI.Layout.MinusButton()) {
 						listProperty.Delete(i);
 						// リストから削除
 						for (int j = dynamicParametersProperty.arraySize-1; j >= 0; --j) {
@@ -178,7 +186,7 @@ namespace skyclad.editor {
 					}
 				}
 			}
-			if (SkycladEditorGUI.Layout.PlusButton()) {
+			if (SkycladEditor.GUI.Layout.PlusButton()) {
 				listProperty.Add(p => {
 					p.Of("parameterType").intValue = (int)ParameterType.Int;
 					p.Of("name").stringValue = "";
@@ -187,27 +195,27 @@ namespace skyclad.editor {
 		}
 
 		private void ControlParameterDefsEditView(SerializedProperty listProperty) {
-			using (SkycladEditorGUI.Layout.Horizontal) {
-				SkycladEditorGUI.Layout.Label("Type", 100.0f);
-				SkycladEditorGUI.Layout.Label("Name", 160.0f);
+			using (SkycladEditor.GUI.Layout.Horizontal) {
+				SkycladEditor.GUI.Layout.Label("Type", SkycladEditor.Modifier.Width(100.0f));
+				SkycladEditor.GUI.Layout.Label("Name", SkycladEditor.Modifier.Width(160.0f));
 			}
 			for (int i = 0; i < listProperty.arraySize; ++i) {
 				SerializedProperty property = listProperty.Of(i);
 				SerializedProperty statusTypeProperty = property.Of("parameterType");
 				SerializedProperty nameProperty = property.Of("name");
 
-				using (SkycladEditorGUI.Layout.Horizontal) {
+				using (SkycladEditor.GUI.Layout.Horizontal) {
 					EditorGUILayout.PropertyField(statusTypeProperty, new GUIContent(""), GUILayout.Width(100.0f));
 
-					SkycladEditorGUI.Layout.TextField(nameProperty, 160.0f);
+					nameProperty.stringValue = SkycladEditor.GUI.Layout.TextField(nameProperty.stringValue, SkycladEditor.Modifier.Width(160.0f));
 
-					if (SkycladEditorGUI.Layout.MinusButton()) {
+					if (SkycladEditor.GUI.Layout.MinusButton()) {
 						listProperty.Delete(i);
 						break;
 					}
 				}
 			}
-			if (SkycladEditorGUI.Layout.PlusButton()) {
+			if (SkycladEditor.GUI.Layout.PlusButton()) {
 				listProperty.Add(p => {
 					p.Of("guid").stringValue = System.Guid.NewGuid().ToString();
 					p.Of("parameterType").intValue = (int)ParameterType.Int;
@@ -219,51 +227,52 @@ namespace skyclad.editor {
 		private void GeneralView() {
 			SerializedProperty characterProperty = serializedObject.FindProperty("_character");
 
-			using (SkycladEditorGUI.Layout.Horizontal) {
-				using (SkycladEditorGUI.Layout.Box()) {
+			using (SkycladEditor.GUI.Layout.Box(new RectOffset(10,10,0,10))) {
+				using (SkycladEditor.GUI.Layout.Horizontal) {
+					if (SkycladEditor.GUI.Layout.Button("Update Script")) {
+						CharacterStatusScriptGenerator.Generate(serializedObject);
+						CharacterColliderScriptGenerator.Generate(serializedObject);
+						CharacterControllerScriptGenerator.Generate(serializedObject);
+						CharacterIdScriptGenerator.Generate(serializedObject);
+					}
+					
+					SkycladEditor.GUI.Layout.Space(width: 20);
+					
+					if (SkycladEditor.GUI.Layout.Button("Update Binary")) {
+						CharacterStatusTableBinaryGenerator.Generate(serializedObject, "characterStatus.bytes");
+					}
+				}
+			}
+
+			using (SkycladEditor.GUI.Layout.Horizontal) {
+				using (SkycladEditor.GUI.Layout.Box()) {
 					SerializedProperty parameterUnitsProperty = characterProperty.Of("_statusParameterUnits");
 
-					using (SkycladEditorGUI.Layout.Horizontal) {
-						SkycladEditorGUI.Layout.Label("Parameters");
-						SkycladEditorGUI.Layout.Space(width: 30);
-						if (SkycladEditorGUI.Layout.Button("Update Script")) {
-							CharacterStatusScriptGenerator.Generate(serializedObject);
-						}
-						SkycladEditorGUI.Layout.Space(width: 30);
-						if (SkycladEditorGUI.Layout.Button("Update Binary")) {
-							CharacterStatusTableBinaryGenerator.Generate(serializedObject, "characterStatus.bytes");
-						}
-					}
-					SkycladEditorGUI.Layout.Space(height: 10);
+					SkycladEditor.GUI.Layout.Label("Parameters");
+					
+					SkycladEditor.GUI.Layout.Space(height: 10);
 
 					EditorGUI.indentLevel++; {
 						StatusDefsEditView(parameterUnitsProperty, characterProperty.Of("_dynamicParameters"));
 					} EditorGUI.indentLevel--;
 
-					SkycladEditorGUI.Layout.Space(height: 50);
+					SkycladEditor.GUI.Layout.Space(height: 50);
 
-					using (SkycladEditorGUI.Layout.Horizontal) {
-						SkycladEditorGUI.Layout.Label("Colliders");
-						SkycladEditorGUI.Layout.Space(width: 30);
-						if (SkycladEditorGUI.Layout.Button("Update Scripts")) {
-							CharacterColliderScriptGenerator.Generate(serializedObject);
-						}
-					}
-
-					SkycladEditorGUI.Layout.Space(height: 10);
+					SkycladEditor.GUI.Layout.Label("Colliders");
+					SkycladEditor.GUI.Layout.Space(height: 10);
 
 					SerializedProperty colliderUnitsProperty = characterProperty.Of("_colliderUnits");
 					EditorGUI.indentLevel++; {
-						using (SkycladEditorGUI.Layout.Horizontal) {
-							SkycladEditorGUI.Layout.Label("name", 120.0f);
-							SkycladEditorGUI.Layout.Label("radius", 60.0f);
-							SkycladEditorGUI.Layout.Label("height", 60.0f);
+						using (SkycladEditor.GUI.Layout.Horizontal) {
+							SkycladEditor.GUI.Layout.Label("name", Modifier.Width(120.0f));
+							SkycladEditor.GUI.Layout.Label("radius", Modifier.Width(60.0f));
+							SkycladEditor.GUI.Layout.Label("height", Modifier.Width(60.0f));
 						}
 
 						for (int i = 0; i < colliderUnitsProperty.arraySize; ++i) {
-							using (SkycladEditorGUI.Layout.Horizontal) {
+							using (SkycladEditor.GUI.Layout.Horizontal) {
 								SerializedProperty colliderUnitProperty = colliderUnitsProperty.Of(i);
-								SkycladEditorGUI.Layout.TextField(colliderUnitProperty.Of("name"), 120.0f);
+								colliderUnitProperty.Of("name").stringValue = SkycladEditor.GUI.Layout.TextField(colliderUnitProperty.Of("name").stringValue, Modifier.Width(120.0f));
 
 								SerializedProperty radiusProperty = colliderUnitProperty.Of("radius");
 								radiusProperty.floatValue = EditorGUILayout.DelayedFloatField(radiusProperty.floatValue, GUILayout.Width(60.0f));
@@ -271,14 +280,14 @@ namespace skyclad.editor {
 								SerializedProperty heightProperty = colliderUnitProperty.Of("height");
 								heightProperty.floatValue = EditorGUILayout.DelayedFloatField(heightProperty.floatValue, GUILayout.Width(60.0f));
 								
-								if (SkycladEditorGUI.Layout.MinusButton()) {
+								if (SkycladEditor.GUI.Layout.MinusButton()) {
 									colliderUnitsProperty.Delete(i);
 									break;
 								}
 							}
 						}
 
-						if (SkycladEditorGUI.Layout.PlusButton()) {
+						if (SkycladEditor.GUI.Layout.PlusButton()) {
 							colliderUnitsProperty.Add((p) => {
 								p.Of("guid").stringValue = System.Guid.NewGuid().ToString();
 								p.Of("name").stringValue = "";
@@ -301,41 +310,54 @@ namespace skyclad.editor {
 					} EditorGUI.indentLevel--;
 				}
 			
-				SkycladEditorGUI.Layout.Space(width: 60);
+				SkycladEditor.GUI.Layout.Space(width: 60);
 
-				using (SkycladEditorGUI.Layout.Box()) {
-					using (SkycladEditorGUI.Layout.Horizontal) {
-						EditorGUILayout.LabelField("Characters");
-						if (SkycladEditorGUI.Layout.Button("Update Scripts")) {
-							CharacterIdScriptGenerator.Generate(serializedObject);
-						}
-					}
+				using (SkycladEditor.GUI.Layout.Box()) {
+					EditorGUILayout.LabelField("Characters");
 
 					EditorGUI.indentLevel++; {
 						SerializedProperty unitsProperty = characterProperty.Of("_units");
-						using (SkycladEditorGUI.Layout.Horizontal) {
-							SkycladEditorGUI.Layout.Label("Name", 160.0f);
-							SkycladEditorGUI.Layout.Label("Collide", 60.0f);
-							SkycladEditorGUI.Layout.Label("Control", 60.0f);
-							SkycladEditorGUI.Layout.Label("Status", 60.0f);
+						using (SkycladEditor.GUI.Layout.Horizontal) {
+							SkycladEditor.GUI.Layout.Label("Name", Modifier.Width(160.0f));
+							SkycladEditor.GUI.Layout.Label("Collide", Modifier.Width(60.0f));
+							SkycladEditor.GUI.Layout.Label("Control", Modifier.Width(60.0f));
+							SkycladEditor.GUI.Layout.Label("Status", Modifier.Width(60.0f));
 						}
 						for (int i = 0; i < unitsProperty.arraySize; ++i) {
 							SerializedProperty unitProperty = unitsProperty.Of(i);
 							SerializedProperty hasColliderProperty = unitProperty.Of("type.hasCollider");
 							SerializedProperty hasControllerProperty = unitProperty.Of("type.hasController");
 							SerializedProperty hasStatusProperty = unitProperty.Of("type.hasStatus");
-							using (SkycladEditorGUI.Layout.Horizontal) {
-								SkycladEditorGUI.Layout.TextField(unitProperty.Of("name"), 160.0f);
-								hasColliderProperty.boolValue = EditorGUILayout.Toggle(hasColliderProperty.boolValue, GUILayout.Width(60.0f));
-								hasControllerProperty.boolValue = EditorGUILayout.Toggle(hasControllerProperty.boolValue, GUILayout.Width(60.0f));
-								hasStatusProperty.boolValue = EditorGUILayout.Toggle(hasStatusProperty.boolValue, GUILayout.Width(60.0f));
-								if (SkycladEditorGUI.Layout.MinusButton()) {
+							using (SkycladEditor.GUI.Layout.Horizontal) {
+								unitProperty.Of("name").stringValue = SkycladEditor.GUI.Layout.TextField(unitProperty.Of("name").stringValue, Modifier.Width(160.0f));
+								hasColliderProperty.boolValue = SkycladEditor.GUI.Layout.Toggle(
+									hasColliderProperty.boolValue, 
+									Modifier
+										.Width(60.0f)
+										.Align(StyleOption.HorizontalAlignment.Center)
+								);
+
+								hasControllerProperty.boolValue = SkycladEditor.GUI.Layout.Toggle(
+									hasControllerProperty.boolValue,
+									Modifier
+										.Width(60.0f)
+										.Align(StyleOption.HorizontalAlignment.Center)
+								);
+
+								hasStatusProperty.boolValue = SkycladEditor.GUI.Layout.Toggle(
+									hasStatusProperty.boolValue,
+									Modifier
+										.Width(60.0f)
+										.Align(StyleOption.HorizontalAlignment.Center)
+								);
+
+								if (SkycladEditor.GUI.Layout.MinusButton()) {
 									unitsProperty.Delete(i);
 									break;
 								}
 							}
 						}
-						if (SkycladEditorGUI.Layout.PlusButton()) {
+						if (SkycladEditor.GUI.Layout.PlusButton()) {
 							unitsProperty.Add(p => {
 								p.Of("guid").stringValue = System.Guid.NewGuid().ToString();
 								p.Of("name").stringValue = "";
@@ -357,9 +379,9 @@ namespace skyclad.editor {
 				}
 			}
 
-			SkycladEditorGUI.Layout.Space(height: 24);
+			SkycladEditor.GUI.Layout.Space(height: 24);
 
-			SkycladEditorGUI.Layout.Label("Character Controller");
+			SkycladEditor.GUI.Layout.Label("Character Controller");
 			ControlToolbar();
 
 			if (_controlTabIndex == GENERAL_TAB) {
@@ -384,28 +406,24 @@ namespace skyclad.editor {
 		}
 
 		private void CharacterControllerGeneralView() {
-			if (SkycladEditorGUI.Layout.Button("Update Scripts")) {
-				CharacterControllerScriptGenerator.Generate(serializedObject);
-			}
-
 			SerializedProperty controllersProperty = serializedObject.FindProperty("_character._controllers");
-			using (SkycladEditorGUI.Layout.Horizontal) {
-				SkycladEditorGUI.Layout.Label("name", 160.0f);
+			using (SkycladEditor.GUI.Layout.Horizontal) {
+				SkycladEditor.GUI.Layout.Label("name", SkycladEditor.Modifier.Width(160.0f));
 			}
 
 			for (int i = 0; i < controllersProperty.arraySize; ++i) {
 				SerializedProperty controllerProperty = controllersProperty.Of(i);
 				SerializedProperty nameProperty = controllerProperty.Of("name");
 
-				using (SkycladEditorGUI.Layout.Horizontal) {
-					SkycladEditorGUI.Layout.TextField(nameProperty, 160.0f);
-					if (SkycladEditorGUI.Layout.MinusButton()) {
+				using (SkycladEditor.GUI.Layout.Horizontal) {
+					nameProperty.stringValue = SkycladEditor.GUI.Layout.TextField(nameProperty.stringValue, SkycladEditor.Modifier.Width(160.0f));
+					if (SkycladEditor.GUI.Layout.MinusButton()) {
 						controllersProperty.Delete(i);
 						break;
 					}
 				}
 			}
-			if (SkycladEditorGUI.Layout.PlusButton()) {
+			if (SkycladEditor.GUI.Layout.PlusButton()) {
 				controllersProperty.Add(p => {
 					p.Of("guid").stringValue = System.Guid.NewGuid().ToString();
 					p.Of("name").stringValue = "";
@@ -430,14 +448,14 @@ namespace skyclad.editor {
 		private void CharacterControllerView(SerializedProperty controllerProperty) {
 			SerializedProperty nameProperty = controllerProperty.Of("name");
 
-			SkycladEditorGUI.Layout.TextField(nameProperty, "Name");
+			nameProperty.stringValue = SkycladEditor.GUI.Layout.TextField(nameProperty.stringValue, SkycladEditor.Modifier.Label("Name"));
 
 			ControlParameterDefsEditView(controllerProperty.Of("_parameters"));
 		}
 
 		private void CharacterContentView(SerializedProperty unitProperty) {
-			using(SkycladEditorGUI.Layout.Horizontal) {
-				SkycladEditorGUI.Layout.TextField(unitProperty.Of("name"), "Character Name");
+			using(SkycladEditor.GUI.Layout.Horizontal) {
+				unitProperty.Of("name").stringValue = SkycladEditor.GUI.Layout.TextField(unitProperty.Of("name").stringValue, SkycladEditor.Modifier.Label("Character Name"));
 			}
 
 			SerializedProperty isPlayerCharacterProperty = unitProperty.Of("isPlayerCharacter");
@@ -454,14 +472,14 @@ namespace skyclad.editor {
 					colliderProperty.stringValue = "";
 				}
 
-				SkycladEditorGUI.Layout.Space(height:32);
+				SkycladEditor.GUI.Layout.Space(height:32);
 
 				// HitBox
-				using (SkycladEditorGUI.Layout.Horizontal) {
+				using (SkycladEditor.GUI.Layout.Horizontal) {
 					SerializedProperty hitBoxLayerProperty = unitProperty.Of("hitBoxLayer");
-					SkycladEditorGUI.Layout.Label("HitBox");
-					SkycladEditorGUI.Layout.Space(width: 50);
-					SkycladEditorGUI.Layout.Label("Layer:");
+					SkycladEditor.GUI.Layout.Label("HitBox");
+					SkycladEditor.GUI.Layout.Space(width: 50);
+					SkycladEditor.GUI.Layout.Label("Layer:");
 					hitBoxLayerProperty.uintValue = (uint) EditorGUILayout.IntPopup(
 						(int)hitBoxLayerProperty.uintValue, 
 						layerNameList.ToArray(), 
@@ -469,32 +487,32 @@ namespace skyclad.editor {
 						GUILayout.Width(120.0f)
 					);
 				}
-				using (SkycladEditorGUI.Layout.Box(new RectOffset(16,16,0,0))) {
-					using(SkycladEditorGUI.Layout.Horizontal) {
-						SkycladEditorGUI.Layout.Label("Extent", 250.0f);
-						SkycladEditorGUI.Layout.Space(width:16);
-						SkycladEditorGUI.Layout.Label("Offset", 250.0f);
+				using (SkycladEditor.GUI.Layout.Box(new RectOffset(16,16,0,0))) {
+					using(SkycladEditor.GUI.Layout.Horizontal) {
+						SkycladEditor.GUI.Layout.Label("Extent", Modifier.Width(250.0f));
+						SkycladEditor.GUI.Layout.Space(width:16);
+						SkycladEditor.GUI.Layout.Label("Offset", Modifier.Width(250.0f));
 					}
 
 					SerializedProperty hitBoxesProperty = unitProperty.Of("hitBoxes");
 
 					for(int i = 0; i < hitBoxesProperty.arraySize; ++i) {
-						using (SkycladEditorGUI.Layout.Horizontal) {
+						using (SkycladEditor.GUI.Layout.Horizontal) {
 							SerializedProperty hitBoxProperty = hitBoxesProperty.Of(i);
 							SerializedProperty extentProperty = hitBoxProperty.Of("extent");
 							SerializedProperty offsetProperty = hitBoxProperty.Of("offset");
 
 							extentProperty.vector3Value = EditorGUILayout.Vector3Field("", extentProperty.vector3Value, GUILayout.Width(250.0f));
-							SkycladEditorGUI.Layout.Space(width:16);
+							SkycladEditor.GUI.Layout.Space(width:16);
 							offsetProperty.vector3Value = EditorGUILayout.Vector3Field("", offsetProperty.vector3Value, GUILayout.Width(250.0f));
 
-							if (SkycladEditorGUI.Layout.MinusButton()) {
+							if (SkycladEditor.GUI.Layout.MinusButton()) {
 								hitBoxesProperty.DeleteArrayElementAtIndex(i);
 								break;
 							}
 						}
 					}
-					if (SkycladEditorGUI.Layout.PlusButton()) {
+					if (SkycladEditor.GUI.Layout.PlusButton()) {
 						hitBoxesProperty.Add((p) => {
 							p.Of("extent").vector3Value = Vector3.zero;
 							p.Of("offset").vector3Value = Vector3.zero;
@@ -504,7 +522,7 @@ namespace skyclad.editor {
 				}
 			}
 			
-			SkycladEditorGUI.Layout.Space(height:32);
+			SkycladEditor.GUI.Layout.Space(height:32);
 
 			if (unitProperty.Of("type.hasController").boolValue) {
 				SerializedProperty controllerProperty = unitProperty.Of("controllerGuid");
@@ -518,7 +536,7 @@ namespace skyclad.editor {
 					for(int i = 0; i < controllersProperty.arraySize; ++i) {
 						SerializedProperty controlProperty = controllersProperty.Of(i);
 						if (controlProperty.Of("name").stringValue == controllerNameList[selectedController]) {
-							using (SkycladEditorGUI.Layout.Box(new RectOffset(32, 32, 12, 0))) {
+							using (SkycladEditor.GUI.Layout.Box(new RectOffset(32, 32, 12, 0))) {
 								ParameterInfoEditView(unitProperty.Of("controller"), controlProperty.Of("_parameters"));
 							}
 						}
@@ -530,8 +548,8 @@ namespace skyclad.editor {
 			}
 
 			if (unitProperty.Of("type.hasStatus").boolValue) {
-				SkycladEditorGUI.Layout.Label("Status");
-				using (SkycladEditorGUI.Layout.Box(new RectOffset(32, 32, 12, 0))) {
+				SkycladEditor.GUI.Layout.Label("Status");
+				using (SkycladEditor.GUI.Layout.Box(new RectOffset(32, 32, 12, 0))) {
 					ParameterInfoEditView(
 						unitProperty.Of("status"),
 						serializedObject.FindProperty("_character._statusParameterUnits")

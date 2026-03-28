@@ -7,11 +7,32 @@ namespace skyclad.editor {
 		public static StyleOption Modifier => new CustomStyleOption();
 
 		public abstract class StyleOption {
+			public enum HorizontalAlignment {
+				None,
+				Left,
+				Right,
+				Center,
+			}
+
 			internal GUIContent label = null;
 			internal GUILayoutOption width = null;
 			internal bool expandWidth = false;
+			internal HorizontalAlignment horizontalAlignment = HorizontalAlignment.None;
 
 			internal StyleOption(){ }
+
+			/// <summary>
+			/// Alignment設定をしたときはレイアウトパラメーターをAlignment側に設定するため、
+			/// 外した状態で本体を描画
+			/// </summary>
+			/// <returns></returns>
+			internal abstract StyleOption IgnoreLayout();
+
+			/// <summary>
+			/// コピーする
+			/// </summary>
+			/// <returns></returns>
+			internal abstract StyleOption Copy();
 
 			public StyleOption FitLabel(GUIContent content) {
 				return Width(EditorStyles.label.CalcSize(content).x + EditorGUI.indentLevel * 15.0f);
@@ -34,6 +55,11 @@ namespace skyclad.editor {
 				}
 			}
 
+			public StyleOption Align(HorizontalAlignment alignment) {
+				this.horizontalAlignment = alignment;
+				return this;
+			}
+
 			internal GUILayoutOption[] LayoutOptions {
 				get {
 					List<GUILayoutOption> layoutOption = new List<GUILayoutOption>();
@@ -48,6 +74,21 @@ namespace skyclad.editor {
 			}
 		}
 
-		private class CustomStyleOption : StyleOption { }
+		private class CustomStyleOption : StyleOption {
+			internal override StyleOption IgnoreLayout() {
+				return new CustomStyleOption {
+					label = label,
+				};
+			}
+
+			internal override StyleOption Copy() {
+				return new CustomStyleOption {
+					label = label,
+					width = width,
+					horizontalAlignment = horizontalAlignment,
+					expandWidth = expandWidth,
+				};
+			}
+		}
 	}
 }

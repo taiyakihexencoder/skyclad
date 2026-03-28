@@ -1,4 +1,5 @@
-﻿using UnityEditor;
+﻿using System.Collections.Generic;
+using UnityEditor;
 using UnityEngine;
 
 namespace skyclad.editor {
@@ -44,9 +45,31 @@ namespace skyclad.editor {
 				}
 
 				public static void Label(string text, StyleOption modifier = null) {
-					EditorGUILayout.LabelField(
-						new GUIContent(text),
-						options: (modifier ?? Modifier.FitLabel(new GUIContent(text))).LayoutOptions
+					Label(text, null, UnityEngine.GUI.skin.label, modifier);
+				}
+
+				public static void Label(string text, string tooltip, StyleOption modifier = null) {
+					Label(text, tooltip, UnityEngine.GUI.skin.label, modifier);
+				}
+
+				public static void Label(string text, GUIStyle style, StyleOption modifier = null) {
+					Label(text, null, style, modifier);
+				}
+
+				public static void Label(string text, string tooltip, GUIStyle style, StyleOption modifier = null) {
+					HorizontalAlignment(
+						modifier, (modifier) => {
+							bool fitWidth = modifier == null || (modifier.width == null && !modifier.expandWidth);
+							StyleOption targetModifier = (modifier ?? Modifier).Copy();
+							if (fitWidth) {
+								targetModifier.FitLabel(new GUIContent(text));
+							}
+							EditorGUILayout.LabelField(
+								new GUIContent(text, tooltip),
+								style,
+								options: targetModifier.LayoutOptions
+							);
+						}
 					);
 				}
 
@@ -67,10 +90,24 @@ namespace skyclad.editor {
 				}
 
 				public static bool Toggle(bool value, StyleOption modifier = null) {
-					return EditorGUILayout.Toggle(
-						value: value,
-						label: modifier?.label ?? new GUIContent(""),
-						options: modifier?.LayoutOptions
+					List<GUILayoutOption> options = new List<GUILayoutOption>(modifier?.LayoutOptions ?? new GUILayoutOption[0]){
+						GUILayout.Width(8.0f),
+					};
+					GUIStyle style = new GUIStyle(UnityEngine.GUI.skin.toggle);
+					style.padding = new RectOffset(0,0,0,0);
+					style.margin = new RectOffset(0,0,0,0);
+					return HorizontalAlignment(
+						value, modifier, (modifier) => {
+							bool result = EditorGUILayout.Toggle(
+								label: "",
+								value: value,
+								options: options.ToArray()
+							);
+
+							Label(modifier?.label?.text ?? "");
+
+							return result;
+						}
 					);
 				}
 
@@ -211,6 +248,45 @@ namespace skyclad.editor {
 				private static float CalculateButtonContentSize(GUIContent content) {
 					return EditorStyles.label.CalcSize(content).x + EditorGUI.indentLevel * 15.0f + 16.0f;
 				}
+
+				private static T HorizontalAlignment<T>(T value, StyleOption modifier, System.Func<StyleOption, T> layout) {
+					if (modifier != null && modifier.horizontalAlignment != StyleOption.HorizontalAlignment.None) {
+						T result;
+						EditorGUILayout.BeginHorizontal(modifier.LayoutOptions);
+						if (modifier.horizontalAlignment == StyleOption.HorizontalAlignment.Right || modifier.horizontalAlignment == StyleOption.HorizontalAlignment.Center) {
+							GUILayout.FlexibleSpace();
+						}
+
+						result = layout(modifier.IgnoreLayout());
+
+						if (modifier.horizontalAlignment == StyleOption.HorizontalAlignment.Left || modifier.horizontalAlignment == StyleOption.HorizontalAlignment.Center) {
+							GUILayout.FlexibleSpace();
+						}
+						EditorGUILayout.EndHorizontal();
+						return result;
+					} else {
+						return layout(modifier);
+					}
+				}
+
+				private static void HorizontalAlignment(StyleOption modifier, System.Action<StyleOption> layout) {
+					if (modifier != null && modifier.horizontalAlignment != StyleOption.HorizontalAlignment.None) {
+						EditorGUILayout.BeginHorizontal(modifier.LayoutOptions);
+						if (modifier.horizontalAlignment == StyleOption.HorizontalAlignment.Right || modifier.horizontalAlignment == StyleOption.HorizontalAlignment.Center) {
+							GUILayout.FlexibleSpace();
+						}
+
+						layout(modifier.IgnoreLayout());
+
+						if (modifier.horizontalAlignment == StyleOption.HorizontalAlignment.Left || modifier.horizontalAlignment == StyleOption.HorizontalAlignment.Center) {
+							GUILayout.FlexibleSpace();
+						}
+						EditorGUILayout.EndHorizontal();
+					} else {
+						layout(modifier);
+					}
+				}
+
 			}
 		}
 	}

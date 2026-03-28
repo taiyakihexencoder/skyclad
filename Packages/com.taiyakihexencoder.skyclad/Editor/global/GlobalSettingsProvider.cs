@@ -31,7 +31,7 @@ namespace skyclad.editor {
 			serializedObject.Update();
 
 			using (serializedObject.ChangeCheckScope()) {
-				using (SkycladEditorGUI.Layout.Box(new RectOffset(20, 20, 20, 20))) {
+				using (SkycladEditor.GUI.Layout.Box(new RectOffset(20, 20, 20, 20))) {
 					LayersGUI();
 				}
 			}
@@ -41,18 +41,20 @@ namespace skyclad.editor {
 			SerializedProperty layersProperty = serializedObject.FindProperty("_global._colliderLayers");
 			SerializedProperty collidesProperty = serializedObject.FindProperty("_global._collides");
 
-			using (SkycladEditorGUI.Layout.Horizontal) {
-				SkycladEditorGUI.Layout.Label("DataTable");
-				SkycladEditorGUI.Layout.Space(width: 30);
-				if (SkycladEditorGUI.Layout.Button("Update Script")) {
+			using (SkycladEditor.GUI.Layout.Horizontal) {
+				SkycladEditor.GUI.Layout.Label("DataTable");
+				SkycladEditor.GUI.Layout.Space(width: 30);
+				if (SkycladEditor.GUI.Layout.Button("Update Script")) {
 					DataTableLoaderGenerator.Generate();
 				}
 			}
 
-			using (SkycladEditorGUI.Layout.Horizontal) {
-				SkycladEditorGUI.Layout.Label("Layers");
-				SkycladEditorGUI.Layout.Space(width: 30);
-				if (SkycladEditorGUI.Layout.Button("Update Script")) {
+			SkycladEditor.GUI.Layout.Space(height: 32);
+
+			using (SkycladEditor.GUI.Layout.Horizontal) {
+				SkycladEditor.GUI.Layout.Label("Layers");
+				SkycladEditor.GUI.Layout.Space(width: 30);
+				if (SkycladEditor.GUI.Layout.Button("Update Script")) {
 					GenerateLayerScript();
 				}
 			}
@@ -87,36 +89,64 @@ namespace skyclad.editor {
 				}
 			}
 
-			using (SkycladEditorGUI.Layout.Horizontal) {
-			    SkycladEditorGUI.Layout.Label("", 24);
-			    SkycladEditorGUI.Layout.Label("Name", 180);
+			GUIStyle evenNumberLabelStyle = new GUIStyle(GUI.skin.label);
+			evenNumberLabelStyle.normal.textColor = new Color(0.5f,1.0f,0.5f,1f);
+			evenNumberLabelStyle.fontSize = 9;
+			GUIStyle oddsNumberLabelStyle = new GUIStyle(GUI.skin.label);
+			oddsNumberLabelStyle.normal.textColor = new Color(0.5f,0.5f,1.0f,1f);
+			oddsNumberLabelStyle.fontSize = 9;
+			using (SkycladEditor.GUI.Layout.Horizontal) {
+				SkycladEditor.GUI.Layout.Label("", SkycladEditor.Modifier.Width(24));
+				SkycladEditor.GUI.Layout.Label("Name", SkycladEditor.Modifier.Width(180));
 				for(int i = 0; i < 32; ++i) {
-					SkycladEditorGUI.Layout.Label(i.ToString("00"), width: 21);
+					SerializedProperty layerProperty = layersProperty.Of(i);
+					SkycladEditor.GUI.Layout.Label(
+						i.ToString("00"), 
+						layerProperty.stringValue,
+						i % 2 == 0 ? evenNumberLabelStyle : oddsNumberLabelStyle,
+						SkycladEditor.Modifier.Width(13)
+					);
 				}
 			}
 
 			for (int i = 0; i < 32; ++i) {
-				using (SkycladEditorGUI.Layout.Horizontal) {
-					SkycladEditorGUI.Layout.Label(i.ToString("00"), width:24);
+				using (SkycladEditor.GUI.Layout.Horizontal) {
+					SkycladEditor.GUI.Layout.Label(
+						i.ToString("00"), 
+						i % 2 == 0 ? evenNumberLabelStyle : oddsNumberLabelStyle,
+						SkycladEditor.Modifier.Width(24)
+					);
 
 					SerializedProperty layerProperty = layersProperty.Of(i);
-					SkycladEditorGUI.Layout.TextField(layerProperty, 180.0f);
-					for (int n = 0; n < i; ++n) {
-						SkycladEditorGUI.Layout.Space(24);
-					}
+					layerProperty.stringValue = SkycladEditor.GUI.Layout.TextField(layerProperty.stringValue, SkycladEditor.Modifier.Width(180.0f));
 
 					string name = layerProperty.stringValue;
 
 					using (new EditorGUI.DisabledScope(string.IsNullOrEmpty(name) || notChangeList.Contains((uint)(1 << i)))) {
-						for (int n = i; n < 32; ++n) {
+						for (int n = 0; n <= i; ++n) {
 							string name2 = layersProperty.Of(n).stringValue;
-							using (new EditorGUI.DisabledScope(string.IsNullOrEmpty(name2))) {
+							using (new EditorGUI.DisabledScope(string.IsNullOrEmpty(name2) || notChangeList.Contains((uint)(1 << n)))) {
 								SerializedProperty collideProperty = collidesProperty.Of(i * 32 + n);
-								collideProperty.boolValue = EditorGUILayout.Toggle(collideProperty.boolValue, GUILayout.Width(21.0f));
+								collideProperty.boolValue = SkycladEditor.GUI.Layout.Toggle(
+									collideProperty.boolValue
+								);
 								collidesProperty.Of(i + n * 32).boolValue = collideProperty.boolValue;
 							}
 						}
 					}
+				}
+			}
+			
+			using (SkycladEditor.GUI.Layout.Horizontal) {
+				SkycladEditor.GUI.Layout.Space(width: 208);
+				for(int i = 0; i < 32; ++i) {
+					SerializedProperty layerProperty = layersProperty.Of(i);
+					SkycladEditor.GUI.Layout.Label(
+						i.ToString("00"), 
+						layerProperty.stringValue,
+						i % 2 == 0 ? evenNumberLabelStyle : oddsNumberLabelStyle,
+						SkycladEditor.Modifier.Width(13)
+					);
 				}
 			}
 		}

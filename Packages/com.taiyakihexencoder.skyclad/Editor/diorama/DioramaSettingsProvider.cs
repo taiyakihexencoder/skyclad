@@ -63,13 +63,13 @@ namespace skyclad.editor {
 			serializedObject.Update();
 
 			using (serializedObject.ChangeCheckScope()) {
-				if (SkycladEditorGUI.Layout.Button("Generate Script")) {
+				if (SkycladEditor.GUI.Layout.Button("Generate Script")) {
 					DioramaIdScriptGenerator.Generate(serializedObject);
 					DioramaLoadJobScriptGenerator.Generate(serializedObject);
 					DioramaUnloadJobScriptGenerator.Generate(serializedObject);
 				}
 
-				SkycladEditorGUI.Layout.Space(height: 20);
+				SkycladEditor.GUI.Layout.Space(height: 20);
 				
 				List<string> tabs = new List<string>();
 				SerializedProperty dioramasProperty = serializedObject.FindProperty("_diorama._units");
@@ -80,14 +80,14 @@ namespace skyclad.editor {
 					tabs.Add(visibleName);
 				}
 
-				using (SkycladEditorGUI.Layout.Horizontal) {
-					if (SkycladEditorGUI.Layout.Button("General")) {
+				using (SkycladEditor.GUI.Layout.Horizontal) {
+					if (SkycladEditor.GUI.Layout.Button("General")) {
 						_selectedIndex = -1;
 						_scrollPosition = Vector2.zero;
 					}
 
 					int selectedIndex = _selectedIndex;
-					_selectedIndex = SkycladEditorGUI.Layout.Toolbar(
+					_selectedIndex = SkycladEditor.GUI.Layout.Toolbar(
 						_selectedIndex, 
 						ref _tabScroll,
 						repaint: Repaint,
@@ -109,28 +109,28 @@ namespace skyclad.editor {
 		private void GeneralEditDrawer() {
 			SerializedProperty dioramasProperty = serializedObject.FindProperty("_diorama._units");
 			using(EditorGUILayout.ScrollViewScope scroll = new EditorGUILayout.ScrollViewScope(_scrollPosition)) {
-				using(SkycladEditorGUI.Layout.Box(new RectOffset(20, 20, 12, 12))) {
+				using(SkycladEditor.GUI.Layout.Box(new RectOffset(20, 20, 12, 12))) {
 					
 					for(int i = 0; i < dioramasProperty.arraySize; ++i) {
 						SerializedProperty dioramaProperty = dioramasProperty.Of(i);
 						SerializedProperty nameProperty = dioramaProperty.Of("name");
 						string visibleName = string.IsNullOrEmpty(nameProperty.stringValue) ? $"Diorama{i.ToString("000")}" : nameProperty.stringValue;
 
-						using (SkycladEditorGUI.Layout.Horizontal) {
-							SkycladEditorGUI.Layout.Label(visibleName, width: 250.0f);
-							if (SkycladEditorGUI.Layout.Button("Edit")) {
+						using (SkycladEditor.GUI.Layout.Horizontal) {
+							SkycladEditor.GUI.Layout.Label(visibleName, SkycladEditor.Modifier.Width(250.0f));
+							if (SkycladEditor.GUI.Layout.Button("Edit")) {
 								_selectedIndex = i;
 								_scrollPosition = Vector2.zero;
 							}
 
-							if (SkycladEditorGUI.Layout.MinusButton()) {
+							if (SkycladEditor.GUI.Layout.MinusButton()) {
 								dioramasProperty.DeleteArrayElementAtIndex(i);
 								break;
 							}
 						}
 					}
 
-					if (SkycladEditorGUI.Layout.PlusButton()) {
+					if (SkycladEditor.GUI.Layout.PlusButton()) {
 						dioramasProperty.Add(p => {
 							p.Of("name").stringValue = "";
 							p.Of("guid").stringValue = System.Guid.NewGuid().ToString();
@@ -146,10 +146,10 @@ namespace skyclad.editor {
 
 		private void DioramaEditDrawer(SerializedProperty property, int index) {
 			using(EditorGUILayout.ScrollViewScope scroll = new EditorGUILayout.ScrollViewScope(_scrollPosition)) {
-				using(SkycladEditorGUI.Layout.Box(new RectOffset(20, 20, 12, 12))) {
+				using(SkycladEditor.GUI.Layout.Box(new RectOffset(20, 20, 12, 12))) {
 					SerializedProperty nameProperty = property.Of("name");
-					SkycladEditorGUI.Layout.TextField(nameProperty, "Name");
-					SkycladEditorGUI.Layout.Space(height: 12);
+					nameProperty.stringValue = SkycladEditor.GUI.Layout.TextField(nameProperty.stringValue, SkycladEditor.Modifier.Label("Name"));
+					SkycladEditor.GUI.Layout.Space(height: 12);
 					
 					SerializedProperty loadOnLaunchProperty = property.Of("loadOnLaunch");
 					loadOnLaunchProperty.boolValue = EditorGUILayout.Toggle("Load on launch", loadOnLaunchProperty.boolValue);
@@ -157,25 +157,25 @@ namespace skyclad.editor {
 					SerializedProperty basisProperty = property.Of("basis");
 					basisProperty.vector3Value = EditorGUILayout.Vector3Field("basis", basisProperty.vector3Value);
 
-					SkycladEditorGUI.Layout.Space(height: 30);
+					SkycladEditor.GUI.Layout.Space(height: 30);
 
 
-					SkycladEditorGUI.Layout.Label("Characters");
+					SkycladEditor.GUI.Layout.Label("Characters");
 					SerializedProperty charactersProperty = property.Of("characters");
 
-					using (SkycladEditorGUI.Layout.Horizontal) {
-						SkycladEditorGUI.Layout.Label("character", 200.0f);
-						SkycladEditorGUI.Layout.Space(width: 20);
-						SkycladEditorGUI.Layout.Label("position", 200.0f);
-						SkycladEditorGUI.Layout.Space(width: 20);
-						SkycladEditorGUI.Layout.Label("rotation", 200.0f);
-						SkycladEditorGUI.Layout.Space(width: 20);
+					using (SkycladEditor.GUI.Layout.Horizontal) {
+						SkycladEditor.GUI.Layout.Label("character", SkycladEditor.Modifier.Width(200.0f));
+						SkycladEditor.GUI.Layout.Space(width: 20);
+						SkycladEditor.GUI.Layout.Label("position", SkycladEditor.Modifier.Width(200.0f));
+						SkycladEditor.GUI.Layout.Space(width: 20);
+						SkycladEditor.GUI.Layout.Label("rotation", SkycladEditor.Modifier.Width(200.0f));
+						SkycladEditor.GUI.Layout.Space(width: 20);
 					}
 					for (int i = 0; i < charactersProperty.arraySize; ++i) {
 						CharacterEditDrawer(charactersProperty, i);
 					}
 
-					if (SkycladEditorGUI.Layout.PlusButton()) {
+					if (SkycladEditor.GUI.Layout.PlusButton()) {
 						charactersProperty.Add(p => {
 							p.Of("guid").stringValue = "";
 							p.Of("position").vector3Value = Vector3.zero;
@@ -217,35 +217,35 @@ namespace skyclad.editor {
 
 					SkycladEditor.GUI.Layout.Space(height: 30);
 
-					SkycladEditorGUI.Layout.Label("Field");
+					SkycladEditor.GUI.Layout.Label("Field");
 
-					using (SkycladEditorGUI.Layout.Box(new RectOffset(20, 20, 0, 0))) {
+					using (SkycladEditor.GUI.Layout.Box(new RectOffset(20, 20, 0, 0))) {
 						SerializedProperty fieldAssetsProperty = property.Of("fieldAssets");
 						for(int i = 0; i < fieldAssetsProperty.arraySize; ++i) {
 							SerializedProperty fieldAssetProperty = fieldAssetsProperty.Of(i);
-							using (SkycladEditorGUI.Layout.Horizontal) {
+							using (SkycladEditor.GUI.Layout.Horizontal) {
 								EditorGUILayout.PropertyField(fieldAssetProperty, new GUIContent($"Element {i}"), GUILayout.Width(400.0f));
-								if (SkycladEditorGUI.Layout.MinusButton()) {
+								if (SkycladEditor.GUI.Layout.MinusButton()) {
 									fieldAssetsProperty.arraySize--;
 									break;
 								}
 							}
 						}
-						if (SkycladEditorGUI.Layout.PlusButton()) {
+						if (SkycladEditor.GUI.Layout.PlusButton()) {
 							fieldAssetsProperty.Add((p) => { p.Of("m_AssetGUID").stringValue = ""; });
 						}
 					}
 
-					SkycladEditorGUI.Layout.Space(height: 30);
+					SkycladEditor.GUI.Layout.Space(height: 30);
 
-					SkycladEditorGUI.Layout.Label("Events");
+					SkycladEditor.GUI.Layout.Label("Events");
 				}
 			}
 		}
 
 		private void CharacterEditDrawer(SerializedProperty parentProperty, int index) {
 			SerializedProperty property = parentProperty.Of(index);
-			using (SkycladEditorGUI.Layout.Horizontal) {
+			using (SkycladEditor.GUI.Layout.Horizontal) {
 				SerializedProperty guidProperty = property.Of("guid");
 				SerializedProperty positionProperty = property.Of("position");
 				SerializedProperty rotationProperty = property.Of("rotation");
@@ -265,20 +265,20 @@ namespace skyclad.editor {
 					guidProperty.stringValue = "";
 				}
 
-				SkycladEditorGUI.Layout.Space(width: 20);
+				SkycladEditor.GUI.Layout.Space(width: 20);
 
 				positionProperty.vector3Value = EditorGUILayout.Vector3Field("", positionProperty.vector3Value, GUILayout.Width(200.0f));
 				Vector3 angle = rotationProperty.quaternionValue.eulerAngles;
 				
 				
-				SkycladEditorGUI.Layout.Space(width: 20);
+				SkycladEditor.GUI.Layout.Space(width: 20);
 
 				angle = EditorGUILayout.Vector3Field("", angle, GUILayout.Width(200.0f));
 				rotationProperty.quaternionValue = Quaternion.Euler(angle);
 
-				SkycladEditorGUI.Layout.Space(width: 20);
+				SkycladEditor.GUI.Layout.Space(width: 20);
 
-				if (SkycladEditorGUI.Layout.MinusButton()) {
+				if (SkycladEditor.GUI.Layout.MinusButton()) {
 					parentProperty.Delete(index);
 				}
 			}
