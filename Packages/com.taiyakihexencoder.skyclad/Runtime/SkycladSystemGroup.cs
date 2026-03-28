@@ -14,6 +14,9 @@ namespace skyclad {
 	public partial class SkycladInputSystemGroup : ComponentSystemGroup { }
 
 	[UpdateInGroup(typeof(SkycladSimulationSystemGroup))]
+	public partial class SkycladBulletSystemGroup : ComponentSystemGroup { }
+
+	[UpdateInGroup(typeof(SkycladSimulationSystemGroup))]
 	public partial class SkycladCharacterSystemGroup : ComponentSystemGroup { }
 
 	[UpdateInGroup(typeof(SkycladSimulationSystemGroup))]
@@ -39,5 +42,8 @@ namespace skyclad {
 
 	[UpdateInGroup(typeof(AfterPhysicsSystemGroup))]
 	public partial class SkycladColliderGroup : ComponentSystemGroup { }
+
+	[UpdateInGroup(typeof(AfterPhysicsSystemGroup)), UpdateAfter(typeof(SkycladColliderGroup))]
+	public partial class BulletHitGroup : ComponentSystemGroup { }
 
 }

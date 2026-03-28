@@ -4,6 +4,8 @@ using UnityEngine;
 namespace skyclad.editor {
 	public static class SkycladEditorGUI {
 		public static class Layout {
+			public enum Alignment { Left, Right, Center, }
+
 			private class BoxScope : System.IDisposable {
 				public BoxScope(RectOffset offset) {
 					EditorGUILayout.BeginVertical(new GUIStyle { 
@@ -58,6 +60,32 @@ namespace skyclad.editor {
 
 			public static void TextField(SerializedProperty property, string label, float? width = null) {
 				property.stringValue = TextField(property.stringValue, label, width);
+			}
+
+			public static bool Toggle(bool value, float? width = null, Alignment alignment = Alignment.Center) {
+				return Toggle(value, "", width, alignment);
+			}
+
+			public static bool Toggle(bool value, string label, float? width = null, Alignment alignment = Alignment.Left) {
+				if (width == null) {
+					EditorGUILayout.BeginHorizontal();
+				} else {
+					EditorGUILayout.BeginHorizontal(GUILayout.Width(width.Value));
+				}
+
+				if (alignment == Alignment.Center || alignment == Alignment.Right) {
+					GUILayout.FlexibleSpace();
+				}
+
+				bool result = EditorGUILayout.Toggle("", value, GUILayout.Width(12f));
+				// emptyでもレイアウト調整で表示したほうがいい
+				Label(label ?? "");
+
+				if (alignment == Alignment.Center || alignment == Alignment.Left) {
+					GUILayout.FlexibleSpace();
+				}
+				EditorGUILayout.EndHorizontal();
+				return result;
 			}
 
 			public static int Toolbar(int selected, params string[] tabs) {

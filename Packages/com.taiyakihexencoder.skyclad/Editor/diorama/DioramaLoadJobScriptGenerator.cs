@@ -12,6 +12,7 @@ namespace skyclad.editor {
 		private static Dictionary<string, CharacterProjectSettings.CharacterController> _controllerTable;
 		private static List<int> _layerValueList = new List<int>();
 		private static List<string> _layerNameList = new List<string>();
+
 		internal static void Generate(SerializedObject serializedObject) {
 			SerializedProperty dioramasProperty = serializedObject.FindProperty("_diorama._units");
 			_characterTable = GetCharacterTable(serializedObject);
@@ -36,8 +37,9 @@ namespace skyclad.editor {
 			gen.AppendLine($"namespace skyclad {{");
 			
 			using(gen.IndentBlock) {
-				gen.AppendLine("using character;");
-				gen.AppendLine("using field;");
+				gen.AppendLine($"using bullet;");
+				gen.AppendLine($"using character;");
+				gen.AppendLine($"using field;");
 				gen.AppendLine($"public partial struct LoadDioramaJob {{");
 
 				using(gen.IndentBlock) {
@@ -70,8 +72,11 @@ namespace skyclad.editor {
 					gen.AppendLine($"");
 
 					List<string> characterPrefabGenerated = new List<string>();
+					List<string> bulletGroupGenerated = new List<string>();
+					
+					BulletSettingsModel bulletSettingsModel = new BulletSettingsModel(serializedObject);
+
 					for(int i = 0; i < dioramasProperty.arraySize; ++i) {
-						characterPrefabGenerated.Clear();
 						SerializedProperty dioramaProperty = dioramasProperty.Of(i);
 						Vector3 basis = dioramaProperty.Of("basis").vector3Value;
 						string name = dioramaProperty.Of("name").stringValue;
@@ -79,6 +84,22 @@ namespace skyclad.editor {
 						gen.AppendLine($"void Load{visibleName}(EntityCommandBuffer commandBuffer) {{");
 
 						using (gen.IndentBlock) {
+							bulletGroupGenerated.Clear();
+							SerializedProperty bulletGroupsProperty = dioramaProperty.Of("bulletGroups");
+							for (int j = 0; j < bulletGroupsProperty.arraySize; ++j) {
+								string guid = bulletGroupsProperty.Of(j).stringValue;
+								if(!bulletGroupGenerated.Contains(guid)) {
+									bulletGroupGenerated.Add(guid);
+								}
+								BulletProjectSettings.Group group = bulletSettingsModel.GetGroup(guid);
+								if (string.IsNullOrEmpty(group.guid)) {
+									Debug.LogWarning($"Bullet group not found:group {j}({guid})");
+								} else {
+									BulletLoadScript(gen, group, name);
+								}
+							}
+
+							characterPrefabGenerated.Clear();
 							SerializedProperty charactersProperty = dioramaProperty.Of("characters");
 							for (int j = 0; j < charactersProperty.arraySize; ++j) {
 								SerializedProperty characterProperty = charactersProperty.Of(j);
@@ -126,6 +147,49 @@ namespace skyclad.editor {
 			_characterTable.Clear();
 			_statusIndexList.Clear();
 			_colliderTable.Clear();
+		}
+
+		private static void BulletLoadScript(
+			SourceCodeGenerator gen,
+			BulletProjectSettings.Group group,
+			string dioramaName
+		) {
+			int hitBoxSelected = _layerValueList.FindIndex(v => v == (int)group.hitBoxLayer);
+			gen.AppendLine($"Entity entityLoadBulletGroup{group.name}Request = CreateRequestEntity(");
+			using (gen.IndentBlock) {
+				gen.AppendLine($"new RequestLoadBulletGroupPrefabComponent {{");
+				using (gen.IndentBlock) {
+					gen.AppendLine($"groupId = BulletGroupId.{group.name},");
+					gen.AppendLine($"dioramaId = DioramaId.{dioramaName},");
+					gen.AppendLine($"name = \"{group.name}\",");
+					if (hitBoxSelected < 0) {
+						gen.AppendLine($"hitBoxLayer = 0,");
+						gen.AppendLine($"hitLayer = 0,");
+					} else {
+	 					string layerText = (hitBoxSelected < 0 ? "" : _layerNameList[hitBoxSelected]);
+						gen.AppendLine($"hitBoxLayer = Layer.{layerText},");
+						gen.AppendLine($"hitLayer = Layer.CollidesWith.{layerText},");
+					}
+				}
+				gen.AppendLine($"}}");
+			}
+			gen.AppendLine($");");
+			gen.AppendLine($"DynamicBuffer<LoadBulletBufferElement> entityLoadBullets{group.name} = commandBuffer.AddBuffer<LoadBulletBufferElement>(entityLoadBulletGroup{group.name}Request);");
+			foreach(BulletProjectSettings.Unit unit in group.units) {
+				gen.AppendLine($"entityLoadBullets{group.name}.Add(");
+				using (gen.IndentBlock) {
+					gen.AppendLine($"new LoadBulletBufferElement {{");
+					using (gen.IndentBlock) {
+						gen.AppendLine($"bulletId = BulletId.{group.name}_{unit.name},");
+						gen.AppendLine($"name = \"{unit.name}\",");
+						gen.AppendLine($"dataIndex = BulletDataIndex.{group.name}_{unit.name}_DataIndex,");
+						gen.AppendLine($"hitBoxType = BulletHitBoxType.{unit.hitBoxType},");
+						gen.AppendLine($"extent = new float3({unit.extent.x}f, {unit.extent.y}f, {unit.extent.z}f)");
+					}
+					gen.AppendLine($"}}");
+				}
+				gen.AppendLine($");");
+			}
 		}
 
 		private static void CharacterLoadScript(
@@ -261,7 +325,7 @@ namespace skyclad.editor {
 							name = name,
 							colliderGuid = characterUnitProperty.Of("colliderGuid").stringValue,
 							isPlayerCharacter = characterUnitProperty.Of("isPlayerCharacter").boolValue,
-							status = new CharacterProjectSettings.ParameterInfo {
+							status = new ParameterInfo {
 								// ステータスは使わないので入れない
 								names = new string[0],
 								values = new string[0],
@@ -272,7 +336,7 @@ namespace skyclad.editor {
 								hasController = characterUnitProperty.Of("type.hasController").boolValue,
 							},
 							controllerGuid = characterUnitProperty.Of("controllerGuid").stringValue,
-							controller = new CharacterProjectSettings.ParameterInfo {
+							controller = new ParameterInfo {
 								names = controllerParameterNames,
 								values = controllerParameters,
 							},
@@ -315,14 +379,14 @@ namespace skyclad.editor {
 				string name = controllerProperty.Of("name").stringValue;
 				string guid = controllerProperty.Of("guid").stringValue;
 				SerializedProperty parametersProperty = controllerProperty.Of("_parameters");
-				CharacterProjectSettings.ParameterDefs[] parameters = new CharacterProjectSettings.ParameterDefs[parametersProperty.arraySize];
+				ParameterDefs[] parameters = new ParameterDefs[parametersProperty.arraySize];
 
 				if (!string.IsNullOrEmpty(name) && !table.ContainsKey(guid)) {
 					for(int n = 0; n < parameters.Length; ++n) {
 						SerializedProperty parameterProperty = parametersProperty.Of(n);
-						parameters[n] = new CharacterProjectSettings.ParameterDefs{
+						parameters[n] = new ParameterDefs{
 							name = parameterProperty.Of("name").stringValue,
-							parameterType = (CharacterProjectSettings.ParameterType)parameterProperty.Of("parameterType").intValue,
+							parameterType = (ParameterType)parameterProperty.Of("parameterType").intValue,
 						};
 					}
 

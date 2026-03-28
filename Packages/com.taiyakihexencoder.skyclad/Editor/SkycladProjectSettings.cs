@@ -40,6 +40,10 @@ namespace skyclad.editor {
 		internal DioramaProjectSettings Diorama => _diorama;
 
 		[SerializeField]
+		private BulletProjectSettings _bullet;
+		internal BulletProjectSettings Bullet => _bullet;
+
+		[SerializeField]
 		private CharacterProjectSettings _character;
 		internal CharacterProjectSettings Character => _character;
 

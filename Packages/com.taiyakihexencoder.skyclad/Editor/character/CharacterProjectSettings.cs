@@ -60,41 +60,6 @@ namespace skyclad.editor {
 			public uint hitBoxLayer;
 		}
 
-		internal enum ParameterType {
-			Int,
-			Bool,
-			Float,
-			Float2,
-			Float3,
-		}
-
-		/// <summary>
-		/// パラメーター定義
-		/// </summary>
-		[System.Serializable]
-		internal struct ParameterDefs {
-			/// <summary>
-			/// パラメーター種別
-			/// </summary>
-			public ParameterType parameterType;
-
-			/// <summary>
-			/// パラメーター名
-			/// </summary>
-			public string name;
-		}
-
-		/// <summary>
-		/// 個別のパラメーター設定
-		/// 型ごとに保持したほうが効率的だが、
-		/// 管理がややこしいのでstringに
-		/// </summary>
-		[System.Serializable]
-		internal struct ParameterInfo {
-			public string[] names;
-			public string[] values;
-		}
-
 		/// <summary>
 		/// Collider単位
 		/// </summary>
@@ -173,6 +138,10 @@ namespace skyclad.editor {
 		[SerializeField]
 		private ParameterDefs[] _statusParameterUnits;
 		public ParameterDefs[] StatusParaneterUnits => _statusParameterUnits;
+
+		[SerializeField]
+		private string[] _dynamicParameters;
+		public string[] DynamicParameters => _dynamicParameters;
 
 		[SerializeField]
 		private ColliderUnit[] _colliderUnits;

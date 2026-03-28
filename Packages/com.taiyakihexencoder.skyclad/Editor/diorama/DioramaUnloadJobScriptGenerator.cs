@@ -5,6 +5,10 @@ using UnityEditor;
 namespace skyclad.editor {
 	internal static class DioramaUnloadJobScriptGenerator {
 		internal static void Generate(SerializedObject serializedObject) {
+			BulletSettingsModel bulletSettingsModel = new BulletSettingsModel(serializedObject);
+			List<string> bulletGroupGuids = bulletSettingsModel.GroupGuids;
+			List<string> bulletGroupNames = bulletSettingsModel.GroupNames;
+
 			SerializedProperty dioramasProperty = serializedObject.FindProperty("_diorama._units");
 			Dictionary<string, string> characterTable = GetCharacterTable(serializedObject);
 			SourceCodeGenerator gen = new SourceCodeGenerator();
@@ -13,6 +17,7 @@ namespace skyclad.editor {
 			gen.AppendLine($"namespace skyclad {{");
 
 			using (gen.IndentBlock) {
+				gen.AppendLine("using bullet;");
 				gen.AppendLine("using character;");
 				gen.AppendLine("using field;");
 				gen.AppendLine($"public partial struct UnloadDioramaJob {{");
@@ -45,16 +50,41 @@ namespace skyclad.editor {
 
 					gen.AppendLine($"");
 
+					List<string> bulletGroupsUnload = new List<string>();
 					List<string> characterPrefabUnload = new List<string>();
 					for(int i = 0; i < dioramasProperty.arraySize; ++i) {
-						characterPrefabUnload.Clear();
 						SerializedProperty dioramaProperty = dioramasProperty.Of(i);
 						string name = dioramaProperty.Of("name").stringValue;
 						string visibleName = string.IsNullOrEmpty(name) ? $"Diorama{i.ToString("000")}" : name;
 						gen.AppendLine($"void Unload{visibleName}(EntityCommandBuffer commandBuffer) {{");
 
 						using (gen.IndentBlock) {
+							bulletGroupsUnload.Clear();
+							SerializedProperty bulletGroupsProperty = dioramaProperty.Of("bulletGroups");
+							for (int j = 0; j < bulletGroupsProperty.arraySize; ++j) {
+								SerializedProperty bulletGroupProperty = bulletGroupsProperty.Of(j);
+								string guid = bulletGroupProperty.stringValue;
+								if (!bulletGroupsUnload.Contains(guid)) {
+									bulletGroupsUnload.Add(guid);
+								}
+							}
+							for(int j = 0; j < bulletGroupsUnload.Count; ++j) {
+								int index = bulletGroupGuids.FindIndex(_ => _ == bulletGroupsUnload[j]);
+								if (index >= 0) {
+									gen.AppendLine($"Entity entityUnloadBulletGroup{bulletGroupNames[index]} = CreateRequestEntity(");
+									using (gen.IndentBlock) {
+										gen.AppendLine($"new RequestUnloadBulletGroupPrefabComponent {{");
+										using(gen.IndentBlock) {
+											gen.AppendLine($"groupId = BulletGroupId.{bulletGroupNames[index]},");
+										}
+										gen.AppendLine($"}}");
+									}
+									gen.AppendLine($");");
+								}
+							}
+
 							SerializedProperty charactersProperty = dioramaProperty.Of("characters");
+							characterPrefabUnload.Clear();
 							for (int j = 0; j < charactersProperty.arraySize; ++j) {
 								SerializedProperty characterProperty = charactersProperty.Of(j);
 								string guid = characterProperty.Of("guid").stringValue;

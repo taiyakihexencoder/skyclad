@@ -37,6 +37,11 @@ namespace skyclad.editor {
 			public Character[] characters;
 
 			/// <summary>
+			/// 読み込むBullet Group
+			/// </summary>
+			public string[] bulletGroups;
+
+			/// <summary>
 			/// フィールドメッシュ
 			/// </summary>
 			public field.FieldAssetReference[] fieldAssets;

@@ -62,8 +62,6 @@ namespace skyclad.character {
 					ComponentType.ReadWrite<LocalToWorld>(),
 					ComponentType.ReadWrite<Parent>(),
 					ComponentType.ReadWrite<PhysicsCollider>(),
-					ComponentType.ReadWrite<collider.ColliderTriggerEvent>(),
-					ComponentType.ReadWrite<collider.ColliderTriggerEnterEvent>(),
 				}
 			);
 
@@ -126,9 +124,10 @@ namespace skyclad.character {
 			) {
 
 				Entity prefabEntity = Entity.Null;
-				foreach (RefRO<CharacterPrefabLoadCounterComponent> prefab
-					in SystemAPI.Query<RefRO<CharacterPrefabLoadCounterComponent>>()) {
+				foreach ((RefRO<CharacterPrefabLoadCounterComponent> prefab, Entity entity)
+					in SystemAPI.Query<RefRO<CharacterPrefabLoadCounterComponent>>().WithEntityAccess()) {
 					if (request.ValueRO.characterId == prefab.ValueRO.characterId) {
+						prefabEntity = entity;
 						break;
 					}
 				}

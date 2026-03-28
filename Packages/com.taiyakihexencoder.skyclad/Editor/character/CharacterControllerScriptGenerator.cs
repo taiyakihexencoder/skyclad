@@ -31,7 +31,7 @@ namespace skyclad.editor {
 					using (gen.IndentBlock) {
 						for(int j = 0; j < parametersProperty.arraySize; ++j) {
 							SerializedProperty parameterProperty = parametersProperty.Of(j);
-							CharacterProjectSettings.ParameterType parameterType = (CharacterProjectSettings.ParameterType)parameterProperty.Of("parameterType").intValue;
+							ParameterType parameterType = (ParameterType)parameterProperty.Of("parameterType").intValue;
 							string parameterName = parameterProperty.Of("name").stringValue;
 							gen.AppendLine($"public {parameterType.ToString().ToLower()} {parameterName};");
 						}
@@ -51,11 +51,11 @@ namespace skyclad.editor {
 			for(int i = 0; i < controllersProperty.arraySize; ++i) {
 				SerializedProperty controllerProperty = controllersProperty.Of(i);
 				SerializedProperty controllerParametersProperty = controllerProperty.Of("_parameters");
-				CharacterProjectSettings.ParameterDefs[] parameterList = new CharacterProjectSettings.ParameterDefs[controllerParametersProperty.arraySize];
+				ParameterDefs[] parameterList = new ParameterDefs[controllerParametersProperty.arraySize];
 				for(int j = 0; j < controllerParametersProperty.arraySize; ++j) {
 					SerializedProperty controllerParameterProperty = controllerParametersProperty.Of(j);
-					parameterList[j] = new CharacterProjectSettings.ParameterDefs {
-						parameterType = (CharacterProjectSettings.ParameterType) controllerParameterProperty.Of("parameterType").intValue,
+					parameterList[j] = new ParameterDefs {
+						parameterType = (ParameterType) controllerParameterProperty.Of("parameterType").intValue,
 						name = controllerParameterProperty.Of("name").stringValue,
 					};
 				}
@@ -127,27 +127,27 @@ namespace skyclad.editor {
 			using (gen.IndentBlock) {
 				Regex regexF2 = new Regex(@"\((?<x>[0-9.]+),(?<y>[0-9.]+)\)");
 				Regex regexF3 = new Regex(@"\((?<x>[0-9.]+),(?<y>[0-9.]+),(?<z>[0-9.]+)\)");
-				foreach (CharacterProjectSettings.ParameterDefs parameter in controller.Parameters) {
+				foreach (ParameterDefs parameter in controller.Parameters) {
 					int index = parameters.FindIndex(_ => _.Key == parameter.name);
 					if (index < 0) { break; }
 					string valueString = parameters[index].Value;
 					switch(parameter.parameterType) {
-						case CharacterProjectSettings.ParameterType.Int:{
+						case ParameterType.Int:{
 							int v = int.TryParse(valueString, out int val) ? val : 0;
 							gen.AppendLine($"{parameter.name} = {v},");
 							break;
 						}
-						case CharacterProjectSettings.ParameterType.Bool:{
+						case ParameterType.Bool:{
 							bool v = bool.TryParse(valueString, out bool val) && val;
 							gen.AppendLine($"{parameter.name} = {v},");
 							break;
 						}
-						case CharacterProjectSettings.ParameterType.Float:{
+						case ParameterType.Float:{
 							float v = float.TryParse(valueString, out float val) ? val : 0.0f;
 							gen.AppendLine($"{parameter.name} = {v}f,");
 							break;
 						}
-						case CharacterProjectSettings.ParameterType.Float2:{
+						case ParameterType.Float2:{
 							Match match = regexF2.Match(valueString);
 							Vector2 v = match.Success 
 								? new Vector2(
@@ -157,7 +157,7 @@ namespace skyclad.editor {
 							gen.AppendLine($"{parameter.name} = new float2({v.x}f, {v.y}f),");
 							break;
 						}
-						case CharacterProjectSettings.ParameterType.Float3:{
+						case ParameterType.Float3:{
 							Match match = regexF3.Match(valueString);
 							Vector3 v = match.Success 
 								? new Vector3(

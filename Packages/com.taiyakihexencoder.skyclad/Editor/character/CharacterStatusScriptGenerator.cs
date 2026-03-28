@@ -13,9 +13,9 @@ namespace skyclad.editor {
 				using (gen.IndentBlock) {
 					for (int i = 0; i < statusParameterUnitsProperty.arraySize; ++i) {
 						SerializedProperty statusParameterUnitProperty = statusParameterUnitsProperty.GetArrayElementAtIndex(i);
-						CharacterProjectSettings.ParameterType statusType = (CharacterProjectSettings.ParameterType) statusParameterUnitProperty.FindPropertyRelative("parameterType").intValue;
+						ParameterType statusType = (ParameterType) statusParameterUnitProperty.FindPropertyRelative("parameterType").intValue;
 						string name = statusParameterUnitProperty.FindPropertyRelative("name").stringValue;
-						string type = GetStatusType(statusType);
+						string type = statusType.GetParameterTypeName();
 						gen.AppendLine($"[Order({i})]");
 						gen.AppendLine($"public {type} {name};");
 					}
@@ -25,29 +25,6 @@ namespace skyclad.editor {
 			gen.AppendLine($"}}");
 
 			gen.Generate($"character{Path.DirectorySeparatorChar}CharacterStatus.cs");
-		}
-
-		private static string GetStatusType(CharacterProjectSettings.ParameterType statusType) {
-			switch (statusType) {
-				case CharacterProjectSettings.ParameterType.Bool: {
-					return "bool";
-				}
-				case CharacterProjectSettings.ParameterType.Int: {
-					return "int";
-				}
-				case CharacterProjectSettings.ParameterType.Float: {
-					return "float";
-				}
-				case CharacterProjectSettings.ParameterType.Float2: {
-					return "float2";
-				}
-				case CharacterProjectSettings.ParameterType.Float3: {
-					return "float3";
-				}
-				default: {
-					return "int";
-				}
-			}
 		}
 	}
 }

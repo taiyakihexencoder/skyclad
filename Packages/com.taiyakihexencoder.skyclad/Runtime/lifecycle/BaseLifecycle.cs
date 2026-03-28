@@ -7,7 +7,6 @@ namespace skyclad.lifecycle {
 		private static BaseLifecycle _custom = null;
 
 		public BaseLifecycle() {
-			UnityEngine.Debug.Log(this.GetType().Name);
 			AssignLifecycle(this);
 		}
 

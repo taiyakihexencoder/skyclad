@@ -119,7 +119,74 @@ namespace skyclad.editor {
 			tabIndex = SkycladEditorGUI.Layout.Toolbar(tabIndex, ref tabScroll, Repaint, contents);
 		}
 
-		private void ParameterDefsEditView(SerializedProperty listProperty) {
+		private void StatusDefsEditView(SerializedProperty listProperty, SerializedProperty dynamicParametersProperty) {
+			using (SkycladEditorGUI.Layout.Horizontal) {
+				SkycladEditorGUI.Layout.Label("Type", 100.0f);
+				SkycladEditorGUI.Layout.Label("Name", 160.0f);
+				SkycladEditorGUI.Layout.Label("Dynamic", 65.0f);
+			}
+
+			bool isDynamic;
+			for (int i = 0; i < listProperty.arraySize; ++i) {
+				SerializedProperty property = listProperty.Of(i);
+				SerializedProperty guidProperty = property.Of("guid");
+				SerializedProperty statusTypeProperty = property.Of("parameterType");
+				SerializedProperty nameProperty = property.Of("name");
+
+				using (SkycladEditorGUI.Layout.Horizontal) {
+					EditorGUILayout.PropertyField(statusTypeProperty, new GUIContent(""), GUILayout.Width(100.0f));
+
+					SkycladEditorGUI.Layout.TextField(nameProperty, 160.0f);
+
+					isDynamic = false;
+					for (int j = 0; j < dynamicParametersProperty.arraySize; ++j) {
+						if (dynamicParametersProperty.Of(j).stringValue == guidProperty.stringValue) {
+							isDynamic = true;
+							break;
+						}
+					}
+
+					if (SkycladEditorGUI.Layout.Toggle(isDynamic, 65.0f)) {
+						if (!isDynamic) {
+							// リストに追加
+							dynamicParametersProperty.Add(
+								(p) => {
+									p.stringValue = guidProperty.stringValue;
+								}
+							);
+						}
+					} else {
+						if (isDynamic) {
+							// リストから削除
+							for (int j = dynamicParametersProperty.arraySize-1; j >= 0; --j) {
+								if (dynamicParametersProperty.Of(j).stringValue == guidProperty.stringValue) {
+									dynamicParametersProperty.DeleteArrayElementAtIndex(j);
+								}
+							}
+						}
+					}
+
+					if (SkycladEditorGUI.Layout.MinusButton()) {
+						listProperty.Delete(i);
+						// リストから削除
+						for (int j = dynamicParametersProperty.arraySize-1; j >= 0; --j) {
+							if (dynamicParametersProperty.Of(j).stringValue == guidProperty.stringValue) {
+								dynamicParametersProperty.DeleteArrayElementAtIndex(j);
+							}
+						}
+						break;
+					}
+				}
+			}
+			if (SkycladEditorGUI.Layout.PlusButton()) {
+				listProperty.Add(p => {
+					p.Of("parameterType").intValue = (int)ParameterType.Int;
+					p.Of("name").stringValue = "";
+				});
+			}
+		}
+
+		private void ControlParameterDefsEditView(SerializedProperty listProperty) {
 			using (SkycladEditorGUI.Layout.Horizontal) {
 				SkycladEditorGUI.Layout.Label("Type", 100.0f);
 				SkycladEditorGUI.Layout.Label("Name", 160.0f);
@@ -133,6 +200,7 @@ namespace skyclad.editor {
 					EditorGUILayout.PropertyField(statusTypeProperty, new GUIContent(""), GUILayout.Width(100.0f));
 
 					SkycladEditorGUI.Layout.TextField(nameProperty, 160.0f);
+
 					if (SkycladEditorGUI.Layout.MinusButton()) {
 						listProperty.Delete(i);
 						break;
@@ -141,7 +209,8 @@ namespace skyclad.editor {
 			}
 			if (SkycladEditorGUI.Layout.PlusButton()) {
 				listProperty.Add(p => {
-					p.Of("parameterType").intValue = (int)CharacterProjectSettings.ParameterType.Int;
+					p.Of("guid").stringValue = System.Guid.NewGuid().ToString();
+					p.Of("parameterType").intValue = (int)ParameterType.Int;
 					p.Of("name").stringValue = "";
 				});
 			}
@@ -168,7 +237,7 @@ namespace skyclad.editor {
 					SkycladEditorGUI.Layout.Space(height: 10);
 
 					EditorGUI.indentLevel++; {
-						ParameterDefsEditView(parameterUnitsProperty);
+						StatusDefsEditView(parameterUnitsProperty, characterProperty.Of("_dynamicParameters"));
 					} EditorGUI.indentLevel--;
 
 					SkycladEditorGUI.Layout.Space(height: 50);
@@ -363,7 +432,7 @@ namespace skyclad.editor {
 
 			SkycladEditorGUI.Layout.TextField(nameProperty, "Name");
 
-			ParameterDefsEditView(controllerProperty.Of("_parameters"));
+			ControlParameterDefsEditView(controllerProperty.Of("_parameters"));
 		}
 
 		private void CharacterContentView(SerializedProperty unitProperty) {
@@ -500,26 +569,26 @@ namespace skyclad.editor {
 					valuesProperty.Of(index).stringValue = "";
 				}
 
-				switch((CharacterProjectSettings.ParameterType)parameterProperty.Of("parameterType").intValue) {
-					case CharacterProjectSettings.ParameterType.Int: {
+				switch((ParameterType)parameterProperty.Of("parameterType").intValue) {
+					case ParameterType.Int: {
 						int value = int.TryParse(valuesProperty.Of(index).stringValue, out int v) ? v : 0;
 						value = EditorGUILayout.DelayedIntField(name, value);
 						valuesProperty.Of(index).stringValue = value.ToString();
 						break;
 					}
-					case CharacterProjectSettings.ParameterType.Bool: {
+					case ParameterType.Bool: {
 						bool value = bool.TryParse(valuesProperty.Of(index).stringValue, out bool v) ? v : false;
 						value = EditorGUILayout.Toggle(name, value);
 						valuesProperty.Of(index).stringValue = value.ToString();
 						break;
 					}
-					case CharacterProjectSettings.ParameterType.Float: {
+					case ParameterType.Float: {
 						float value = float.TryParse(valuesProperty.Of(index).stringValue, out float v) ? v : 0.0f;
 						value = EditorGUILayout.DelayedFloatField(name, value);
 						valuesProperty.Of(index).stringValue = value.ToString();
 						break;
 					}
-					case CharacterProjectSettings.ParameterType.Float2: {
+					case ParameterType.Float2: {
 						Match match = regexF2.Match(valuesProperty.Of(index).stringValue);
 						Vector2 value = match.Success 
 							? new Vector2(
@@ -530,7 +599,7 @@ namespace skyclad.editor {
 						valuesProperty.Of(index).stringValue = $"({value.x},{value.y})";
 						break;
 					}
-					case CharacterProjectSettings.ParameterType.Float3: {
+					case ParameterType.Float3: {
 						Match match = regexF3.Match(valuesProperty.Of(index).stringValue);
 						Vector3 value = match.Success 
 							? new Vector3(

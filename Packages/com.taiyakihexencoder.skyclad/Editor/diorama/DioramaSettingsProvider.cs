@@ -14,6 +14,8 @@ namespace skyclad.editor {
 		string[] characterNames;
 		string[] characterGuids;
 
+		private BulletSettingsModel bulletSettingsModel;
+
 		internal DioramaSettingsProvider(
 			string path,
 			SettingsScope scopes,
@@ -29,6 +31,8 @@ namespace skyclad.editor {
 			_scrollPosition = Vector2.zero;
 			_selectedIndex = -1;
 			_tabScroll = 0.0f;
+
+			bulletSettingsModel = new BulletSettingsModel(serializedObject);
 
 			List<string> characterNameList = new List<string>();
 			List<string> characterGuidList = new List<string>();
@@ -179,7 +183,39 @@ namespace skyclad.editor {
 						});
 					}
 
-					SkycladEditorGUI.Layout.Space(height: 30);
+					SkycladEditor.GUI.Layout.Space(height: 30);
+
+					SkycladEditor.GUI.Layout.Label("Bullets");
+					using(SkycladEditor.GUI.Layout.Box(new RectOffset(20,20,0,0))) {
+						SerializedProperty bulletGroupsProperty = property.Of("bulletGroups");
+						List<string> groupNames = bulletSettingsModel.GroupNames;
+						List<string> groupGuids = bulletSettingsModel.GroupGuids;
+
+						for(int i = 0; i < bulletGroupsProperty.arraySize; ++i) {
+							using(SkycladEditor.GUI.Layout.Horizontal) {
+								SerializedProperty bulletGroupProperty = bulletGroupsProperty.Of(i);
+								string selected = bulletGroupProperty.stringValue;
+								int selectedIndex = groupGuids.FindIndex(_ => selected == _);
+								selectedIndex = EditorGUILayout.Popup(selectedIndex, groupNames.ToArray());
+								
+								if (0 <= selectedIndex && selectedIndex < groupGuids.Count) {
+									bulletGroupProperty.stringValue = groupGuids[selectedIndex];
+								}
+
+								if (SkycladEditor.GUI.Layout.MinusButton()) {
+									bulletGroupsProperty.DeleteArrayElementAtIndex(i);
+									break;
+								}
+							}
+						}
+						
+						if (SkycladEditor.GUI.Layout.PlusButton()){
+							bulletGroupsProperty.Add((p) => p.stringValue = "");
+						}
+					}
+
+
+					SkycladEditor.GUI.Layout.Space(height: 30);
 
 					SkycladEditorGUI.Layout.Label("Field");
 

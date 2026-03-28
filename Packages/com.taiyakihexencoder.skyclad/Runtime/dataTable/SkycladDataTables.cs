@@ -19,6 +19,7 @@ namespace skyclad {
 		private static SynchronizationContext _mainContext;
 
 		private static BlobAssetReference<SkycladDataBlob<CharacterStatus>> _characterStatus;
+		private static BlobAssetReference<SkycladDataBlob<BulletParameter>> _bulletParameters;
 
 		static partial void InitTables();
 		static partial void InitIngameTables();
@@ -33,6 +34,7 @@ namespace skyclad {
 		internal static void Init(SynchronizationContext mainContext) {
 			_mainContext = mainContext;
 			_characterStatus = BlobAssetReference<SkycladDataBlob<CharacterStatus>>.Null;
+			_bulletParameters = BlobAssetReference<SkycladDataBlob<BulletParameter>>.Null;
 
 			InitTables();
 		}

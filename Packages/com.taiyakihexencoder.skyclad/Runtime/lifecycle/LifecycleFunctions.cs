@@ -24,7 +24,9 @@ namespace skyclad.lifecycle {
 					Entity entity = entityManager.CreateSingleton(physicsStep, "Physics");
 			
 					// Debug
-					entityManager.AddComponentData(entity, new PhysicsDebugDisplayData { DrawColliders = 1, });
+					entityManager.AddComponentData(entity, new PhysicsDebugDisplayData { 
+						DrawColliders = 1, 
+					});
 				}
 			}
 

@@ -5,7 +5,7 @@ using UnityEditor;
 using UnityEngine;
 
 namespace skyclad.editor {
-	internal static class CharacterStatusTableBinaryGenerator {
+	internal static class BulletParameterTableBinaryGenerator {
 		internal static void Generate(SerializedObject serializedObject, string path) {
 			BinaryFileGenerator.Generate(
 				(writer) => WriteBinary(writer, serializedObject),
@@ -14,24 +14,13 @@ namespace skyclad.editor {
 		}
 
 		private static void WriteBinary(BinaryWriter writer, SerializedObject serializedObject) {
-			SerializedProperty parametersProperty = serializedObject.FindProperty("_character._statusParameterUnits");
-			SerializedProperty unitsProperty = serializedObject.FindProperty("_character._units");
+			SerializedProperty parameterDefsProperty = serializedObject.FindProperty("_bullet._parameterDefs");
 
-			writer.Write(unitsProperty.arraySize);
+			List<ParameterDefs> parameters = ParameterDefs.AsList(parameterDefsProperty);
 
-			List<ParameterDefs> parameters = new List<ParameterDefs>();
 			List<System.Action<BinaryWriter, string>> writeAction = new List<System.Action<BinaryWriter, string>>();
-			for (int i = 0; i < parametersProperty.arraySize; ++i) {
-				SerializedProperty parameterProperty = parametersProperty.Of(i);
-				ParameterType statusType = (ParameterType) parameterProperty.Of("parameterType").intValue;
-				parameters.Add(
-					new ParameterDefs {
-						name = parameterProperty.Of("name").stringValue,
-						parameterType = statusType,
-					}
-				);
-
-				switch(statusType) {
+			for (int i = 0; i < parameters.Count; ++i) {
+				switch(parameters[i].parameterType) {
 					case ParameterType.Int: {
 						writeAction.Add(IntegerWriter);
 						break;
@@ -55,35 +44,32 @@ namespace skyclad.editor {
 				}
 			}
 
+			SerializedProperty unitsProperty, parameterProperty, namesProperty, valuesProperty;
+			SerializedProperty groupsProperty = serializedObject.FindProperty("_bullet._groups");
 
-			SerializedProperty unitProperty, statusProperty, statusNamesProperty, statusValuesProperty;
-			int index;
+			int dataCount = 0;
+			for(int groupIndex = 0; groupIndex < groupsProperty.arraySize; ++groupIndex) {
+				unitsProperty = groupsProperty.Of(groupIndex).Of("units");
+				dataCount += unitsProperty.arraySize;
+			}
+			writer.Write(dataCount);
 
-			for (int i = 0; i < unitsProperty.arraySize; ++i) {
-				unitProperty = unitsProperty.Of(i);
-				if (! unitProperty.Of("type").Of("hasStatus").boolValue) {
-					continue;
-				}
-				statusProperty = unitsProperty.Of(i).Of("status");
-				statusNamesProperty = statusProperty.Of("names");
-				statusValuesProperty = statusProperty.Of("values");
+			for (int groupIndex = 0; groupIndex < groupsProperty.arraySize; ++groupIndex) {
+				unitsProperty = groupsProperty.Of(groupIndex).Of("units");
+				for (int unitIndex = 0; unitIndex < unitsProperty.arraySize; ++unitIndex) {
+					parameterProperty = unitsProperty.Of(unitIndex).Of("parameter");
+					namesProperty = parameterProperty.Of("names");
+					valuesProperty = parameterProperty.Of("values");
 
-				for (int j = 0; j < parameters.Count; ++j) {
-					ParameterDefs parameter = parameters[j];
-					for(index = 0; index < statusNamesProperty.arraySize; ++index) {
-						if (statusNamesProperty.Of(index).stringValue == parameter.name) {
-							break;
+					for (int parameterIndex = 0; parameterIndex < parameters.Count; ++parameterIndex) {
+						string value = "";
+						for (int unitParameterIndex = 0; unitParameterIndex < namesProperty.arraySize; ++unitParameterIndex) {
+							if (namesProperty.Of(unitParameterIndex).stringValue == parameters[parameterIndex].name) {
+								value = valuesProperty.Of(unitParameterIndex).stringValue;
+							}
 						}
+						writeAction[parameterIndex](writer, value);
 					}
-
-					string value;
-					if (index == statusNamesProperty.arraySize) {
-						value = "";
-					} else {
-						value = statusValuesProperty.Of(index).stringValue;
-					}
-
-					writeAction[j](writer, value);
 				}
 			}
 		}
@@ -125,5 +111,6 @@ namespace skyclad.editor {
 			writer.Write(v.y);
 			writer.Write(v.z);
 		}
+
 	}
 }
