@@ -45,6 +45,9 @@ namespace skyclad.lifecycle {
 				.Build(ref state);
 
 			state.RequireForUpdate<RequestEnterAdventureComponent>();
+
+			// セーブデータ読み込み待ち
+			state.RequireForUpdate<userData.UserDataComponent>();
 		}
 
 		void ISystem.OnUpdate(ref SystemState state) {

@@ -50,6 +50,10 @@ namespace skyclad.editor {
 		[SerializeField]
 		private FieldProjectSettings _field;
 		internal FieldProjectSettings Field => _field;
+
+		[SerializeField]
+		private UserDataProjectSettings _userData;
+		internal UserDataProjectSettings UserData => _userData;
 	}
 
 	[CustomEditor(typeof(SkycladProjectSettings))]

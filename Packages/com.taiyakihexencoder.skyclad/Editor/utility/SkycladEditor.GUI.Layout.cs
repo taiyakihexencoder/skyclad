@@ -81,7 +81,7 @@ namespace skyclad.editor {
 					);
 				}
 
-				public static float FloadField(float value, StyleOption modifier = null) {
+				public static float FloatField(float value, StyleOption modifier = null) {
 					return EditorGUILayout.FloatField(
 						value: value,
 						label: modifier?.label ?? new GUIContent(""),

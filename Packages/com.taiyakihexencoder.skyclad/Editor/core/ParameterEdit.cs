@@ -216,7 +216,7 @@ namespace skyclad.editor {
 						}
 						case ParameterType.Float: {
 							float value = float.TryParse(valueProperty.stringValue, out float v) ? v : 0.0f;
-							value = SkycladEditor.GUI.Layout.FloadField(value);
+							value = SkycladEditor.GUI.Layout.FloatField(value);
 							valueProperty.stringValue = value.ToString();
 							break;
 						}

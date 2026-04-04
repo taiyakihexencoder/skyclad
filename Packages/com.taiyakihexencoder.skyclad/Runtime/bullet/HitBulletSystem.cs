@@ -6,7 +6,7 @@ namespace skyclad.bullet {
 	/// 攻撃のヒット処理
 	/// </summary>
 	[UpdateInGroup(typeof(BulletHitGroup))]
-	public partial struct BulletSystem : ISystem {
+	public partial struct HitBulletSystem : ISystem {
 		private EntityQuery query;
 
 		void ISystem.OnCreate(ref SystemState state) {
@@ -38,6 +38,7 @@ namespace skyclad.bullet {
 				BulletParameter parameter = bullet.ValueRO.master.Value.records[bullet.ValueRO.masterIndex];
 				foreach(collider.ColliderTriggerEnterEvent evt in evts) {
 					Entity hitEntity = evt.Other;
+					commandBuffer.AppendToBuffer(sortKey, hitEntity, new HitQueue{ parameter = parameter, });
 				}
 			}
 		}

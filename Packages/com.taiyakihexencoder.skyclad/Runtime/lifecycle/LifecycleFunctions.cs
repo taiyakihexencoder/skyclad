@@ -41,6 +41,12 @@ namespace skyclad.lifecycle {
 			EntityManager entityManager = world.EntityManager;
 			Entity entity = entityManager.CreateEntity();
 			entityManager.AddComponent<RequestEnterAdventureComponent>(entity);
+
+			System.Threading.Tasks.Task.Run(
+				async() => {
+					await userData.UserDataLoader.Load(0);
+				}
+			);
 		}
 
 		/// <summary>

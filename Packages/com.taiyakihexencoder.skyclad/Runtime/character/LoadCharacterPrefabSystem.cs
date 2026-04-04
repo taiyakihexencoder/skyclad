@@ -42,6 +42,7 @@ namespace skyclad.character {
 					ComponentType.ReadWrite<LinkedEntityGroup>(),
 					ComponentType.ReadWrite<collider.ColliderCollisionEvent>(),
 					ComponentType.ReadWrite<collider.ColliderCollisionStayEvent>(),
+					ComponentType.ReadWrite<HitLog>(),
 				}
 			);
 
@@ -62,6 +63,7 @@ namespace skyclad.character {
 					ComponentType.ReadWrite<LocalToWorld>(),
 					ComponentType.ReadWrite<Parent>(),
 					ComponentType.ReadWrite<PhysicsCollider>(),
+					ComponentType.ReadWrite<HitQueue>(),
 				}
 			);
 
@@ -264,6 +266,13 @@ namespace skyclad.character {
 						hitBoxEntity, 
 						LocalTransform.FromPosition(hitBox.offset)
 					);
+					commandBuffer.SetComponent(
+						hitBoxEntity,
+						new CharacterHitBox {
+							invincibleSeconds = 0.0f,
+							valid = true,
+						}
+					);
 					BlobAssetReference<Collider> geometry = BoxCollider.Create(
 						geometry: new BoxGeometry {
 							BevelRadius = 0.0f,
@@ -302,6 +311,7 @@ namespace skyclad.character {
 				commandBuffer.RemoveComponent<PhysicsVelocity>(prefabEntity);
 				commandBuffer.RemoveComponent<collider.ColliderCollisionEvent>(prefabEntity);
 				commandBuffer.RemoveComponent<collider.ColliderCollisionStayEvent>(prefabEntity);
+				commandBuffer.RemoveComponent<HitLog>(prefabEntity);
 			}
 
 			#if UNITY_EDITOR

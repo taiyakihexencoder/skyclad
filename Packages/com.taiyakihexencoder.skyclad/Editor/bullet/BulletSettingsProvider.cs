@@ -171,7 +171,7 @@ namespace skyclad.editor {
 									}
 									case BulletHitBoxType.Sphere: {
 										float radius = extentProperty.vector3Value.x;
-										radius = SkycladEditor.GUI.Layout.FloadField(
+										radius = SkycladEditor.GUI.Layout.FloatField(
 											radius,
 											SkycladEditor.Modifier
 												.Label("Radius")
@@ -183,13 +183,13 @@ namespace skyclad.editor {
 										float radius = extentProperty.vector3Value.x;
 										float height = extentProperty.vector3Value.y;
 										using (SkycladEditor.GUI.Layout.Horizontal) {
-											radius = SkycladEditor.GUI.Layout.FloadField(
+											radius = SkycladEditor.GUI.Layout.FloatField(
 												radius,
 												SkycladEditor.Modifier
 													.Label("Radius")
 													.ExpandWidth
 											);
-											height = SkycladEditor.GUI.Layout.FloadField(
+											height = SkycladEditor.GUI.Layout.FloatField(
 												height,
 												SkycladEditor.Modifier
 													.Label("Height")
@@ -203,13 +203,13 @@ namespace skyclad.editor {
 										float radius = extentProperty.vector3Value.x;
 										float height = extentProperty.vector3Value.y;
 										using (SkycladEditor.GUI.Layout.Horizontal) {
-											radius = SkycladEditor.GUI.Layout.FloadField(
+											radius = SkycladEditor.GUI.Layout.FloatField(
 												radius,
 												SkycladEditor.Modifier
 													.Label("Radius")
 													.ExpandWidth
 											);
-											height = SkycladEditor.GUI.Layout.FloadField(
+											height = SkycladEditor.GUI.Layout.FloatField(
 												height,
 												SkycladEditor.Modifier
 													.Label("Height")
@@ -257,7 +257,7 @@ namespace skyclad.editor {
 
 			using (SkycladEditor.GUI.Layout.Horizontal) {
 				SkycladEditor.GUI.Layout.Label("Life time", SkycladEditor.Modifier.Width(70.0f));
-				lifeTimeProperty.floatValue = SkycladEditor.GUI.Layout.FloadField(
+				lifeTimeProperty.floatValue = SkycladEditor.GUI.Layout.FloatField(
 					lifeTimeProperty.floatValue,
 					SkycladEditor.Modifier
 						.Width(100.0f)
@@ -279,7 +279,7 @@ namespace skyclad.editor {
 					}
 					case bullet.BulletTrail.Straight: {
 						SkycladEditor.GUI.Layout.Label("Speed");
-						speedProperty.floatValue = SkycladEditor.GUI.Layout.FloadField(
+						speedProperty.floatValue = SkycladEditor.GUI.Layout.FloatField(
 							speedProperty.floatValue,
 							SkycladEditor.Modifier
 								.Width(100.0f)

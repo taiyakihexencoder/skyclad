@@ -12,12 +12,29 @@ namespace skyclad {
 				_mainContext = SynchronizationContext.Current;
 			}
 
+			public static T Send<T>(System.Func<T> function) {
+				T value = default;
+				_mainContext.Send(
+					(_) => value = function(), 
+					null
+				);
+				return value;
+			}
+
 			public static void Send(System.Action action) {
 				_mainContext.Send((_) => action(), null);
 			}
 
 			public static void Post(System.Action action) {
 				_mainContext.Post((_) => action(), null);
+			}
+
+			public static void Log(object log) {
+				_mainContext.Post((_) => Debug.Log(log), null);
+			}
+
+			public static void LogError(object log) {
+				_mainContext.Post((_) => Debug.LogError(log), null);
 			}
 
 			/// <summary>

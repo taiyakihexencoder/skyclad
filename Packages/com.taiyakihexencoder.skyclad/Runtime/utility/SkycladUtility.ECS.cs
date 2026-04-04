@@ -7,6 +7,7 @@ namespace skyclad {
 		public static class ECS {
 			public const uint DISABLED_PHYSICS_INDEX = 141;
 			public const uint ENABLED_PHYSICS_INDEX = 0;
+			public const float DAMAGED_INVINCIBLE_SECONDS = 0.25f;
 
 			public static World World => World.DefaultGameObjectInjectionWorld;
 			public static EntityManager EntityManager => World.EntityManager;

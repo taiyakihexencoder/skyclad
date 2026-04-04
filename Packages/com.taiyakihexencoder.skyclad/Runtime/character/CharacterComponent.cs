@@ -57,8 +57,24 @@ namespace skyclad {
 	/// <summary>
 	/// ヒットボックス
 	/// </summary>
-	public struct CharacterHitBox : IComponentData, IEnableableComponent {
-		
+	public struct CharacterHitBox : IComponentData {
+		public bool valid;
+		public float invincibleSeconds;
+	}
+
+	/// <summary>
+	/// ヒット情報
+	/// </summary>
+	public struct HitQueue : IBufferElementData {
+		public BulletParameter parameter;
+	}
+
+	/// <summary>
+	/// HitQueueの情報をHitBoxから受け取る
+	/// </summary>
+	public struct HitLog : IBufferElementData {
+		public Entity hitBox;
+		public BulletParameter parameter;
 	}
 
 	/// <summary>
