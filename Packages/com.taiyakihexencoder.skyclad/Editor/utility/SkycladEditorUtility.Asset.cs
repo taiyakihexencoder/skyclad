@@ -27,6 +27,25 @@ namespace skyclad.editor {
 				}
 				AssetDatabase.CreateAsset(asset, path);
 			}
+
+			/// <summary>
+			/// Unity Editorのアイコンをスプライトとして取得する
+			/// </summary>
+			/// <param name="name"></param>
+			/// <returns></returns>
+			public static Sprite GetDefaultIconSprite(string name) {
+				Texture2D texture = EditorGUIUtility.IconContent(name).image as Texture2D;
+				if (texture == null) {
+					Debug.LogError($"Failed to get sprite:{name}");
+					return null;
+				} else {
+					return Sprite.Create(
+						texture,
+						new Rect(0f, 0f, texture.width, texture.height),
+						new Vector2(0.5f, 0.5f)
+					);
+				}
+			}
 		}
 	}
 }

@@ -22,8 +22,8 @@ namespace skyclad.editor {
 				}
 
 				private class VerticalLayoutScope : System.IDisposable {
-					public VerticalLayoutScope() { EditorGUILayout.BeginHorizontal(); }
-					void System.IDisposable.Dispose(){ EditorGUILayout.EndHorizontal(); }
+					public VerticalLayoutScope() { EditorGUILayout.BeginVertical(); }
+					void System.IDisposable.Dispose(){ EditorGUILayout.EndVertical(); }
 				}
 
 				private class VerticalScrollScope : System.IDisposable {
@@ -37,6 +37,16 @@ namespace skyclad.editor {
 				public static System.IDisposable Box(RectOffset padding = null) => new BoxScope(padding ?? new RectOffset());
 				public static void Space(int width = 0, int height = 0) {
 					using(Box(new RectOffset(width, 0, height, 0))){}
+				}
+
+				public static void HorizontalLine(float width = 1, Color? color = null) {
+					GUIStyle skin = new GUIStyle();
+					Texture2D texture = new Texture2D(1,1);
+					texture.SetPixel(0,0, color ?? new Color(0.1f, 0.1f, 0.1f));
+					texture.Apply();
+					skin.normal.background = texture;
+					GUILayout.Box("", skin, GUILayout.Height(1f), GUILayout.ExpandWidth(true));
+					GameObject.DestroyImmediate(texture);
 				}
 
 				public static bool Foldout(SerializedProperty property, string label) {
@@ -238,7 +248,10 @@ namespace skyclad.editor {
 				}
 
 				public static bool Button(string text, float? width = null) {
-					GUIContent content = new GUIContent(text);
+					return Button(new GUIContent(text), width);
+				}
+
+				public static bool Button(GUIContent content, float? width = null) {
 					return GUILayout.Button(
 						content,
 						GUILayout.Width(width ?? CalculateButtonContentSize(content))
