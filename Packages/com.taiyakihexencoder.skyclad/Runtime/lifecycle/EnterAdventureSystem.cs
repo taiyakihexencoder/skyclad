@@ -120,7 +120,7 @@ namespace skyclad.lifecycle {
 		private void StartLoadSystem(ref SystemState state) {
 			EntityManager entityManager = state.EntityManager;
 
-			foreach(int dioramaId in DioramaId.LaunchDioramas) {
+			foreach(int dioramaId in DioramaId.LaunchDioramas ?? new int[0]) {
 				Entity entity = entityManager.CreateEntity(loadDioramaArchetype);
 				entityManager.SetComponentData(
 					entity,
