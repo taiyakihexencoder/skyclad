@@ -124,6 +124,11 @@ namespace skyclad.field {
 				}
 				_blobs.Remove(fieldMeshId);
 			}
+
+			string address = FieldMeshId.GetAddress(fieldMeshId);
+			if (address != null) {
+				SkycladUtility.Resource.Unload(address);
+			}
 		}
 	}
 }

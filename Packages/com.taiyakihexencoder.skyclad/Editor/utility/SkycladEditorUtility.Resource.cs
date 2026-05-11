@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.IO;
 using UnityEditor;
 using UnityEditor.AddressableAssets;
 using UnityEditor.AddressableAssets.Settings;
@@ -12,8 +13,6 @@ namespace skyclad.editor {
 			/// <summary>
 			/// アドレスリストを取得
 			/// </summary>
-			/// <param name="type"></param>
-			/// <returns></returns>
 			public static List<string> GetAddressList(System.Type type) {
 				List<string> addressList = new List<string>();
 				foreach (AddressableAssetGroup group in settings.groups) {
@@ -29,10 +28,6 @@ namespace skyclad.editor {
 			/// <summary>
 			/// アドレスリストを取得
 			/// </summary>
-			/// <param name="type"></param>
-			/// <param name="path"></param>
-			/// <param name="paths"></param>
-			/// <returns></returns>
 			public static List<string> GetAddressList(System.Type type, string path, params string[] paths) {
 				List<string> targetPaths = new List<string>(paths);
 				targetPaths.Add(path);
@@ -56,10 +51,44 @@ namespace skyclad.editor {
 			}
 
 			/// <summary>
+			/// アドレスリストを取得
+			/// </summary>
+			public static List<string> GetAddressList(string path, params string[] paths) {
+				List<string> targetPaths = new List<string>(paths);
+				targetPaths.Add(path);
+				for(int i = 0; i < targetPaths.Count; ++i) {
+					if (!targetPaths[i].EndsWith('/')) {
+						targetPaths[i] = $"{targetPaths[i]}/";
+					}
+				}
+
+				List<string> addressList = new List<string>();
+				foreach (AddressableAssetGroup group in settings.groups) {
+					foreach (AddressableAssetEntry entry in group.entries) {
+						if (targetPaths.Exists(p => entry.address.StartsWith(p))) {
+							addressList.Add(entry.address);
+						}
+					}
+				}
+				return addressList;
+			}
+
+			/// <summary>
+			/// アドレスリストを取得
+			/// </summary>
+			public static List<string> GetAddressList() {
+				List<string> addressList = new List<string>();
+				foreach (AddressableAssetGroup group in settings.groups) {
+					foreach (AddressableAssetEntry entry in group.entries) {
+						addressList.Add(entry.address);
+					}
+				}
+				return addressList;
+			}
+
+			/// <summary>
 			/// アドレスとGUIDのテーブルを取得
 			/// </summary>
-			/// <param name="type"></param>
-			/// <returns></returns>
 			public static Dictionary<string, string> GetAddressAndGuidList(System.Type type) {
 				Dictionary<string, string> addressList = new Dictionary<string, string>();
 				foreach (AddressableAssetGroup group in settings.groups) {
@@ -75,8 +104,6 @@ namespace skyclad.editor {
 			/// <summary>
 			/// アドレスとGUIDのテーブルを取得
 			/// </summary>
-			/// <param name="type"></param>
-			/// <returns></returns>
 			public static Dictionary<string, string> GetAddressAndGuidList(System.Type type, string path, params string[] paths) {
 				List<string> targetPaths = new List<string>(paths);
 				targetPaths.Add(path);
@@ -99,6 +126,42 @@ namespace skyclad.editor {
 				return addressList;
 			}
 
+			/// <summary>
+			/// アドレスとGUIDのテーブルを取得
+			/// </summary>
+			public static Dictionary<string, string> GetAddressAndGuidList(string path, params string[] paths) {
+				List<string> targetPaths = new List<string>(paths);
+				targetPaths.Add(path);
+				for(int i = 0; i < targetPaths.Count; ++i) {
+					if (!targetPaths[i].EndsWith('/')) {
+						targetPaths[i] = $"{targetPaths[i]}/";
+					}
+				}
+
+				Dictionary<string, string> addressList = new Dictionary<string, string>();
+				foreach (AddressableAssetGroup group in settings.groups) {
+					foreach (AddressableAssetEntry entry in group.entries) {
+						if (targetPaths.Exists(p => entry.address.StartsWith(p))) {
+							addressList.Add(AssetDatabase.AssetPathToGUID(entry.AssetPath), entry.address);
+						}
+					}
+				}
+				return addressList;
+			}
+
+			/// <summary>
+			/// アドレスとGUIDのテーブルを取得
+			/// </summary>
+			public static Dictionary<string, string> GetAddressAndGuidList() {
+				Dictionary<string, string> addressList = new Dictionary<string, string>();
+				foreach (AddressableAssetGroup group in settings.groups) {
+					foreach (AddressableAssetEntry entry in group.entries) {
+						addressList.Add(AssetDatabase.AssetPathToGUID(entry.AssetPath), entry.address);
+					}
+				}
+				return addressList;
+			}
+
 			public static string GetAddress(string guid) {
 				foreach (AddressableAssetGroup group in settings.groups) {
 					foreach (AddressableAssetEntry entry in group.entries) {
@@ -108,6 +171,33 @@ namespace skyclad.editor {
 					}
 				}
 				return null;
+			}
+
+			public static string GetAssetPathFromAddress(string address) {
+				foreach (AddressableAssetGroup group in settings.groups) {
+					foreach(AddressableAssetEntry entry in group.entries) {
+						if (entry.address == address) {
+							return entry.AssetPath;
+						}
+					}
+				}
+				return "";
+			}
+
+			/// <summary>
+			/// アドレスからアセット名を取得する
+			/// </summary>
+			/// <param name="address"></param>
+			/// <returns></returns>
+			public static string GetAssetNameFromAddress(string address) {
+				foreach (AddressableAssetGroup group in settings.groups) {
+					foreach(AddressableAssetEntry entry in group.entries) {
+						if (entry.address == address) {
+							return entry.MainAsset.name;
+						}
+					}
+				}
+				return "";
 			}
 
 			/// <summary>
@@ -153,6 +243,10 @@ namespace skyclad.editor {
 				string guid = AssetDatabase.AssetPathToGUID(assetPath);
 				AddressableAssetEntry entry = settings.CreateOrMoveEntry(guid, group);
 				entry.address = address;
+			}
+
+			public static T LoadAssetAtAddress<T>(string address) where T : Object {
+				return AssetDatabase.LoadAssetAtPath<T>(GetAssetPathFromAddress(address));
 			}
 		}
 	}

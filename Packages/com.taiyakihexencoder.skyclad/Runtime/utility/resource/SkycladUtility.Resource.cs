@@ -31,6 +31,12 @@ namespace skyclad {
 							_resources.Add(address, holder);
 						}
 					);
+				} else {
+					SkycladUtility.Async.Post(
+						() => {
+							holder.IncrementReferenceCount();
+						}
+					);
 				}
 
 				object res = await holder.Resource;
@@ -47,8 +53,11 @@ namespace skyclad {
 			/// <param name="address"></param>
 			public static void Unload(string address) {
 				if (_resources.TryGetValue(address, out IResourceHolder resourceHolder)) {
-					resourceHolder.Dispose();
-					_resources.Remove(address);
+					if(!resourceHolder.DecrementReferenceCount()) {
+						resourceHolder.Dispose();
+						_resources.Remove(address);
+						Debug.Log($"Resource:{address} unloaded.");
+					}
 				} else {
 					Debug.LogWarning($"Address:{address} not loaded.");
 				}
@@ -66,6 +75,8 @@ namespace skyclad {
 
 			private sealed class ResourceHolder<T> : IResourceHolder where T : class {
 				private AsyncOperationHandle<T> _handle;
+				private int _referenceCount;
+				int IResourceHolder.ReferenceCount => _referenceCount;
 
 				Task<object> IResourceHolder.Resource {
 					get {
@@ -75,12 +86,22 @@ namespace skyclad {
 
 				internal ResourceHolder(AsyncOperationHandle<T> handle) {
 					_handle = handle;
+					_referenceCount = 1;
 				}
 
 				void IResourceHolder.Dispose() {
 					if (_handle.IsValid()) {
 						Addressables.Release(_handle);
 					}
+				}
+
+				void IResourceHolder.IncrementReferenceCount() {
+					_referenceCount++;
+				}
+
+				bool IResourceHolder.DecrementReferenceCount() {
+					_referenceCount--;
+					return _referenceCount > 0;
 				}
 			}
 		}
