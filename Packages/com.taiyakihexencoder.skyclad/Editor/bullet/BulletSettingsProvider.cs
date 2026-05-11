@@ -60,7 +60,7 @@ namespace skyclad.editor {
 					}
 					SkycladEditor.GUI.Layout.Space(width: 48);
 					if (SkycladEditor.GUI.Layout.Button("Update Binary")) {
-						BulletParameterTableBinaryGenerator.Generate(serializedObject, "bulletParameter.bytes");
+						BulletParameterTableBinaryGenerator.Generate(serializedObject, "bullet.bytes");
 					}
 				}
 

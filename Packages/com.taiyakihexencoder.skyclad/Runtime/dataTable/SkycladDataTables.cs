@@ -18,8 +18,9 @@ namespace skyclad {
 	public static partial class SkycladDataTables {
 		private static SynchronizationContext _mainContext;
 
-		private static BlobAssetReference<SkycladDataBlob<CharacterStatus>> _characterStatus;
-		private static BlobAssetReference<SkycladDataBlob<BulletParameter>> _bulletParameters;
+		public static BlobAssetReference<SkycladDataBlob<CharacterStatus>> characterStatus{ get; private set; }
+
+		public static BlobAssetReference<SkycladDataBlob<BulletParameter>> bullet{ get; private set; }
 
 		static partial void InitTables();
 		static partial void InitIngameTables();
@@ -33,8 +34,8 @@ namespace skyclad {
 		/// <param entityName="mainContext"></param>
 		internal static void Init(SynchronizationContext mainContext) {
 			_mainContext = mainContext;
-			_characterStatus = BlobAssetReference<SkycladDataBlob<CharacterStatus>>.Null;
-			_bulletParameters = BlobAssetReference<SkycladDataBlob<BulletParameter>>.Null;
+			characterStatus = BlobAssetReference<SkycladDataBlob<CharacterStatus>>.Null;
+			bullet = BlobAssetReference<SkycladDataBlob<BulletParameter>>.Null;
 
 			InitTables();
 		}
@@ -59,8 +60,6 @@ namespace skyclad {
 		/// すべてのデータテーブルを破棄する
 		/// </summary>
 		internal static void Dispose() {
-			if (_characterStatus.IsCreated) { _characterStatus.Dispose(); }
-
 			DisposeAllTables();
 		}
 
@@ -78,12 +77,12 @@ namespace skyclad {
 							}
 						}
 					} catch (System.Exception e) {
-						UnityEngine.Debug.LogError(e);
+						Debug.LogError(e);
 						// todo
 						list = null;
 					}
 
-					_mainContext.Post((_) => loader.Assign(list), null);
+					_mainContext.Send((_) => loader.Assign(list), null);
 				}
 			);
 		}

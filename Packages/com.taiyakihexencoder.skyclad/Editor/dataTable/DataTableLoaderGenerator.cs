@@ -67,8 +67,6 @@ namespace skyclad.editor {
 			using (gen.IndentBlock) {
 				foreach(KeyValuePair<System.Type, DataTableColumnAttribute> type in dex) {
 					gen.AppendLine($"private static {type.Key.Name}Loader {type.Value.tableName}Load;");
-					gen.AppendLine($"public static BlobAssetReference<SkycladDataBlob<{type.Key.Name}>> {type.Value.tableName} => {type.Value.tableName}Load.assetReference;");
-					gen.AppendLine($"");
 				}
 
 				// InitTables
@@ -81,7 +79,12 @@ namespace skyclad.editor {
 					gen.AppendLine($"");
 					foreach(KeyValuePair<System.Type, DataTableColumnAttribute> type in dex) {
 						if (type.Value.tableType == DataTableType.Persistent) {
-							gen.AppendLine($"Task.Run(async () => await Load({type.Value.tableName}Load));");
+							gen.AppendLine($"Task.Run(async () => {{");
+							using (gen.IndentBlock) {
+								gen.AppendLine($"await Load({type.Value.tableName}Load);");
+								gen.AppendLine($"{type.Value.tableName} = {type.Value.tableName}Load.assetReference;");
+							}
+							gen.AppendLine($"}});");
 						}
 					}
 				}
@@ -94,7 +97,12 @@ namespace skyclad.editor {
 				using (gen.IndentBlock) {
 					foreach(KeyValuePair<System.Type, DataTableColumnAttribute> type in dex) {
 						if (type.Value.tableType == DataTableType.Ingame) {
-							gen.AppendLine($"Task.Run(async () => await Load({type.Value.tableName}Load));");
+							gen.AppendLine($"Task.Run(async () => {{");
+							using (gen.IndentBlock) {
+								gen.AppendLine($"await Load({type.Value.tableName}Load);");
+								gen.AppendLine($"{type.Value.tableName} = {type.Value.tableName}Load.assetReference;");
+							}
+							gen.AppendLine($"}});");
 						}
 					}
 				}
