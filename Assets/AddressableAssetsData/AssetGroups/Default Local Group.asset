@@ -15,16 +15,6 @@ MonoBehaviour:
   m_GroupName: Default Local Group
   m_GUID: 93dafebfad155f842ac51cc127f83786
   m_SerializeEntries:
-  - m_GUID: 0147e212f97e3d449a4b9e4f5d057180
-    m_Address: animations/unity-chan/wait00
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 6dd5b57ca7c0d48e4b3e9061e1c88d18
-    m_Address: animations/unity-chan/damaged00
-    m_ReadOnly: 0
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 8703b4aea612fa04d89d1b480a2b3dd3
     m_Address: Field/Field01
     m_ReadOnly: 0

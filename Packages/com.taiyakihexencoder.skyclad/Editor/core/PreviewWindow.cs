@@ -17,7 +17,7 @@ namespace skyclad.editor {
 
 		protected interface PreviewScene {
 			void Add(GameObject go);
-			void Delete(GameObject go);
+			void Remove(GameObject go);
 		}
 
 		private class Preview : PreviewCamera, PreviewLight, PreviewScene {
@@ -117,7 +117,7 @@ namespace skyclad.editor {
 				_previewRenderer.AddSingleGO(go);
 			}
 
-			void PreviewScene.Delete(GameObject go){
+			void PreviewScene.Remove(GameObject go){
 				DestroyImmediate(go);
 			}
 
@@ -243,27 +243,23 @@ namespace skyclad.editor {
 				// Repaintのみにしないとマウスイベントなどのたびに再描画となり、
 				// スタックしやすくなる
 				if (evt.type == EventType.Repaint) {
-					if (_lastFrame == 0.0) {
-						_lastFrame = EditorApplication.timeSinceStartup;
-						return;
-					}
-
-					double current = EditorApplication.timeSinceStartup;
-					if (! previewPaused) {
-						OnRepaint(current - _lastFrame);
-					}
-					_lastFrame = current;
-
 					_preview.BeginRender(rect, !previewPaused);
 					_preview.EndRender(rect, !previewPaused);
-					Repaint();
 				}
 			}
-
-			OnDrawGUI();
 		}
 
 		protected sealed override void Update() {
+			if (_lastFrame == 0.0) {
+				_lastFrame = EditorApplication.timeSinceStartup;
+				return;
+			}
+
+			double current = EditorApplication.timeSinceStartup;
+			if (! previewPaused) {
+				OnUpdate(current - _lastFrame);
+			}
+			_lastFrame = current;
 		}
 
 		/// <summary>
@@ -273,14 +269,10 @@ namespace skyclad.editor {
 		protected virtual void OnObserveEvent(Event evt) { }
 
 		/// <summary>
-		/// UIパーツの描画
+		/// EditorWindowのUpdate
 		/// </summary>
-		protected virtual void OnDrawGUI() { }
-
-		/// <summary>
-		/// 再描画時の処理
-		/// </summary>
-		protected virtual void OnRepaint(double deltaTime) { }
+		/// <param name="deltaTime"></param>
+		protected virtual void OnUpdate(double deltaTime) { }
 	}
 
 	/// <summary>
