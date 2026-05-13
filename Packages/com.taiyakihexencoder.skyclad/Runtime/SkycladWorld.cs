@@ -58,8 +58,8 @@ namespace skyclad {
 		/// <summary>
 		/// インゲーム開始
 		/// </summary>
-		internal static void EnterAdventure() {
-			lifecycle.LifecycleFunctions.EnterAdventure(SkycladUtility.ECS.World);
+		internal static void EnterAdventure(int saveDataSlot) {
+			lifecycle.LifecycleFunctions.EnterAdventure(SkycladUtility.ECS.World, saveDataSlot);
 		}
 
 		/// <summary>

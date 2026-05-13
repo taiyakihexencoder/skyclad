@@ -30,21 +30,21 @@ namespace skyclad.lifecycle {
 				}
 			}
 
-			//(仮)
-			EnterAdventure(world);
+			// (仮)
+			// EnterAdventure(world, 0);
 		}
 
 		/// <summary>
 		/// インゲームの開始
 		/// </summary>
-		internal static void EnterAdventure(World world) {
+		internal static void EnterAdventure(World world, int saveDataSlot) {
 			EntityManager entityManager = world.EntityManager;
 			Entity entity = entityManager.CreateEntity();
 			entityManager.AddComponent<RequestEnterAdventureComponent>(entity);
 
 			System.Threading.Tasks.Task.Run(
 				async() => {
-					await userData.UserDataLoader.Load(0);
+					await userData.UserDataLoader.Load(saveDataSlot);
 				}
 			);
 		}
