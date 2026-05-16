@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using UnityEngine;
 
 namespace skyclad {
@@ -84,18 +85,21 @@ namespace skyclad {
 		}
 #endif
 
+		[Conditional("UNITY_EDITOR")]
 		public static void SetText(int index, string text) {
 #if UNITY_EDITOR
 			_instance?.SetTextInternal(index, text);
 #endif
 		}
 
+		[Conditional("UNITY_EDITOR")]
 		public static void SetColor(int index, uint color) {
 #if UNITY_EDITOR
 			_instance?.SetColorInternal(index, color);
 #endif
 		}
 
+		[Conditional("UNITY_EDITOR")]
 		public static void Clear() {
 #if UNITY_EDITOR
 			_instance?.ClearInternal();
