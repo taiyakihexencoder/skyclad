@@ -1,6 +1,7 @@
 ﻿using Unity.Entities;
 
-namespace skyclad.input {
+namespace skyclad {
+	using input;
 	public static partial class SkycladUtility {
 		public static class Input {
 			/// <summary>
