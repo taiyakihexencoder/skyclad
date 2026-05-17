@@ -2,7 +2,7 @@
 using Unity.Mathematics;
 
 namespace skyclad.input {
-		/// <summary>
+	/// <summary>
 	/// 入力を検知するEntityのリスト
 	/// </summary>
 	public struct InputListenerBufferElement : IBufferElementData {

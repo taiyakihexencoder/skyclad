@@ -130,7 +130,7 @@ namespace skyclad {
 #if UNITY_EDITOR
 					commandBuffer.SetName(entity, "Update Input Listener Request");
 #endif
-					commandBuffer.SetComponent(
+					commandBuffer.AddComponent(
 						requestEntity, 
 						new RequestUpdateInputListenerComponent {
 							target = entity,
@@ -183,7 +183,7 @@ namespace skyclad {
 #if UNITY_EDITOR
 				commandBuffer.SetName(entity, "Update Input Listener Request");
 #endif
-				commandBuffer.SetComponent(
+				commandBuffer.AddComponent(
 					requestEntity, 
 					new RequestUpdateInputListenerComponent {
 						target = entity,
