@@ -37,7 +37,9 @@ namespace skyclad {
 		}
 
 		public static void EndAnimation(this VisualElement ve) {
+			Debug.Log(ve.userData.GetType().Name);
 			if (ve.userData is IValueAnimation animation) {
+				Debug.Log("call");
 				animation.Stop();
 				ve.userData = null;
 			}
