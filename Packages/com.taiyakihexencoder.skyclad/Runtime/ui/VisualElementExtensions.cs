@@ -93,6 +93,7 @@ namespace skyclad {
 		/// <param name="durationMillis"></param>
 		/// <param name="easing"></param>
 		public static void FadeIn(this VisualElement ve, int durationMillis, System.Func<float, float> easing) {
+			ve.style.visibility = Visibility.Visible;
 			ve.experimental.animation
 				.Start(0.0f, 1.0f, durationMillis, (ve, opacity) => ve.style.opacity = opacity)
 				.Ease(easing);
@@ -114,9 +115,13 @@ namespace skyclad {
 		/// <param name="durationMillis"></param>
 		/// <param name="easing"></param>
 		public static void FadeOut(this VisualElement ve, int durationMillis, System.Func<float, float> easing) {
-			ve.experimental.animation
+			ValueAnimation<float> animation = ve.experimental.animation
 				.Start(1.0f, 0.0f, durationMillis, (ve, opacity) => ve.style.opacity = opacity)
 				.Ease(easing);
+			animation.onAnimationCompleted += () => {
+				ve.style.visibility = Visibility.Hidden;
+				animation.onAnimationCompleted = null;
+			};
 		}
 
 		/// <summary>
@@ -136,6 +141,7 @@ namespace skyclad {
 		/// <param name="durationMillis"></param>
 		/// <param name="easing"></param>
 		public static void SlideIn(this VisualElement ve, Vector2 offset, int durationMillis, System.Func<float, float> easing) {
+			ve.style.visibility = Visibility.Visible;
 			ve.style.translate = offset;
 			ve.experimental.animation
 				.Position(Vector3.zero, durationMillis)
@@ -160,9 +166,13 @@ namespace skyclad {
 		/// <param name="durationMillis"></param>
 		/// <param name="easing"></param>
 		public static void SlideOut(this VisualElement ve, Vector2 offset, int durationMillis, System.Func<float, float> easing) {
-			ve.experimental.animation
+			ValueAnimation<Vector3> animation = ve.experimental.animation
 				.Position(offset, durationMillis)
 				.Ease(easing);
+			animation.onAnimationCompleted += () => {
+				ve.style.visibility = Visibility.Hidden;
+				animation.onAnimationCompleted = null;
+			};
 		}
 
 		/// <summary>
@@ -175,5 +185,61 @@ namespace skyclad {
 			SlideOut(ve, offset, durationMillis, Easing.OutQuad);
 		}
 
+		/// <summary>
+		/// ズームイン
+		/// </summary>
+		/// <param name="ve"></param>
+		/// <param name="from"></param>
+		/// <param name="to"></param>
+		/// <param name="durationMillis"></param>
+		/// <param name="easing"></param>
+		public static void ZoomIn(this VisualElement ve, float from, float to, int durationMillis, System.Func<float, float> easing) {
+			ve.style.scale = new StyleScale(new Scale(new Vector2(from, from)));
+			ve.style.visibility = Visibility.Visible;
+			ve.experimental.animation
+				.Scale(to, durationMillis)
+				.Ease(easing);
+		}
+
+		/// <summary>
+		/// ズームイン
+		/// </summary>
+		/// <param name="ve"></param>
+		/// <param name="from"></param>
+		/// <param name="to"></param>
+		/// <param name="durationMillis"></param>
+		public static void ZoomIn(this VisualElement ve, float from, float to, int durationMillis) {
+			ZoomIn(ve, from, to, durationMillis, Easing.OutBack);
+		}
+
+		/// <summary>
+		/// ズームアウト
+		/// </summary>
+		/// <param name="ve"></param>
+		/// <param name="from"></param>
+		/// <param name="to"></param>
+		/// <param name="durationMillis"></param>
+		/// <param name="easing"></param>
+		public static void ZoomOut(this VisualElement ve, float from, float to, int durationMillis, System.Func<float, float> easing) {
+			ve.style.scale = new StyleScale(new Scale(new Vector2(from, from)));
+			ValueAnimation<float> animation = ve.experimental.animation
+				.Scale(to, durationMillis)
+				.Ease(easing);
+			animation.onAnimationCompleted += () => {
+				ve.style.visibility = Visibility.Hidden;
+				animation.onAnimationCompleted = null;
+			};
+		}
+
+		/// <summary>
+		/// ズームアウト
+		/// </summary>
+		/// <param name="ve"></param>
+		/// <param name="from"></param>
+		/// <param name="to"></param>
+		/// <param name="durationMillis"></param>
+		public static void ZoomOut(this VisualElement ve, float from, float to, int durationMillis) {
+			ZoomOut(ve, from, to, durationMillis, Easing.InBack);
+		}
 	}
 }
