@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using Unity.Properties;
+using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.Experimental;
 
@@ -73,6 +74,17 @@ namespace skyclad {
 		/// <param name="durationMillis"></param>
 		public static void StartBlink(this VisualElement ve, Color from, Color to, int durationMillis) {
 			StartBlink(ve, from, to, durationMillis, Easing.InOutSine);
+		}
+
+		/// <summary>
+		/// Labelの色を変更する
+		/// </summary>
+		/// <param name="ve"></param>
+		/// <param name="to"></param>
+		/// <param name="durationMillis"></param>
+		public static void ChangeLabelColor(this Label ve, Color to, int durationMillis) {
+			ve.experimental.animation
+				.Start(ve.style.color.value, to, durationMillis, (ve, color) => ve.style.color = to );
 		}
 
 		/// <summary>
@@ -240,6 +252,36 @@ namespace skyclad {
 		/// <param name="durationMillis"></param>
 		public static void ZoomOut(this VisualElement ve, float from, float to, int durationMillis) {
 			ZoomOut(ve, from, to, durationMillis, Easing.InBack);
+		}
+
+		/// <summary>
+		/// SliderのパラメーターBinding
+		/// </summary>
+		/// <param name="slider"></param>
+		/// <param name="binding"></param>
+		public static void Bind(this Slider slider, in SliderBinding binding) {
+			slider.SetBinding(
+				"value", 
+				new DataBinding {
+					dataSourcePath = new PropertyPath(nameof(SliderBinding.value)),
+					bindingMode = BindingMode.ToTarget,
+				}
+			);
+			slider.SetBinding(
+				"lowValue",
+				new DataBinding {
+					dataSourcePath = new PropertyPath(nameof(SliderBinding.lowValue)),
+					bindingMode = BindingMode.ToTarget,
+				}
+			);
+			slider.SetBinding(
+				"highValue",
+				new DataBinding {
+					dataSourcePath = new PropertyPath(nameof(SliderBinding.highValue)),
+					bindingMode = BindingMode.ToTarget,
+				}
+			);
+			slider.dataSource = binding;
 		}
 	}
 }
