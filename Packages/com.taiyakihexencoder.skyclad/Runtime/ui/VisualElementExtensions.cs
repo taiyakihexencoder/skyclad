@@ -105,6 +105,7 @@ namespace skyclad {
 		/// <param name="durationMillis"></param>
 		/// <param name="easing"></param>
 		public static void FadeIn(this VisualElement ve, int durationMillis, System.Func<float, float> easing) {
+			ve.style.opacity = 0.0f;
 			ve.style.visibility = Visibility.Visible;
 			ve.experimental.animation
 				.Start(0.0f, 1.0f, durationMillis, (ve, opacity) => ve.style.opacity = opacity)
