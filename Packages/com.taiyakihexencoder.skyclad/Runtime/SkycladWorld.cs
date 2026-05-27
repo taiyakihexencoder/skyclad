@@ -59,14 +59,18 @@ namespace skyclad {
 		/// インゲーム開始
 		/// </summary>
 		public static void EnterAdventure(int saveDataSlot) {
-			lifecycle.LifecycleFunctions.EnterAdventure(SkycladUtility.ECS.World, saveDataSlot);
+			SkycladUtility.ECS.ExecuteCommandBufferTemp(commandBuffer => {
+				lifecycle.LifecycleFunctions.EnterAdventure(commandBuffer, saveDataSlot);
+			});
 		}
 
 		/// <summary>
 		/// インゲーム終了
 		/// </summary>
 		public static void ExitAdventure() {
-			lifecycle.LifecycleFunctions.ExitAdventure(SkycladUtility.ECS.World);
+			SkycladUtility.ECS.ExecuteCommandBufferTemp(commandBuffer => {
+				lifecycle.LifecycleFunctions.ExitAdventure(commandBuffer);
+			});
 		}
 	}
 }

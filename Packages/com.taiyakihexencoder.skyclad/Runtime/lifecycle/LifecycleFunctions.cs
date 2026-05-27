@@ -37,10 +37,9 @@ namespace skyclad.lifecycle {
 		/// <summary>
 		/// インゲームの開始
 		/// </summary>
-		internal static void EnterAdventure(World world, int saveDataSlot) {
-			EntityManager entityManager = world.EntityManager;
-			Entity entity = entityManager.CreateEntity();
-			entityManager.AddComponent<RequestEnterAdventureComponent>(entity);
+		internal static void EnterAdventure(EntityCommandBuffer commandBuffer, int saveDataSlot) {
+			Entity entity = commandBuffer.CreateEntity();
+			commandBuffer.AddComponent<RequestEnterAdventureComponent>(entity);
 
 			System.Threading.Tasks.Task.Run(
 				async() => {
@@ -52,10 +51,9 @@ namespace skyclad.lifecycle {
 		/// <summary>
 		/// インゲームの終了
 		/// </summary>
-		internal static void ExitAdventure(World world) {
-			EntityManager entityManager = world.EntityManager;
-			Entity entity = entityManager.CreateEntity();
-			entityManager.AddComponent<RequestExitAdventureComponent>(entity);
+		internal static void ExitAdventure(EntityCommandBuffer commandBuffer) {
+			Entity entity = commandBuffer.CreateEntity();
+			commandBuffer.AddComponent<RequestExitAdventureComponent>(entity);
 		}
 
 		/// <summary>
