@@ -14,9 +14,7 @@ namespace skyclad {
 			public static Entity CreateEntity(FixedString64Bytes name, System.Action<EntityManager, Entity> action) {
 				EntityManager entityManager = EntityManager;
 				Entity entity = entityManager.CreateEntity();
-				#if UNITY_EDITOR
-				entityManager.SetName(entity, name);
-				#endif
+				entity.Name(entityManager, name);
 				action(entityManager, entity);
 				return entity;
 			}
@@ -24,9 +22,7 @@ namespace skyclad {
 			public static Entity CreateEntity(FixedString64Bytes name, EntityArchetype archetype, System.Action<EntityManager, Entity> action) {
 				EntityManager entityManager = EntityManager;
 				Entity entity = entityManager.CreateEntity(archetype);
-				#if UNITY_EDITOR
-				entityManager.SetName(entity, name);
-				#endif
+				entity.Name(entityManager, name);
 				action(entityManager, entity);
 				return entity;
 			}
