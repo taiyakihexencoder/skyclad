@@ -12,7 +12,8 @@
         "Unity.Physics",
         "Unity.Physics.Hybrid",
         "Unity.ResourceManager",
-        "Unity.Transforms"
+        "Unity.Transforms",
+        "skyclad.internal"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

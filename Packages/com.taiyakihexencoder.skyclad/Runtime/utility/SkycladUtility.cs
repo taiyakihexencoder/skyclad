@@ -1,17 +1,11 @@
-﻿using UnityEngine;
-
-namespace skyclad {
+﻿namespace skyclad {
+	using internalProc;
 	public static partial class SkycladUtility {
 		/// <summary>
 		/// アプリケーションを終了する。
 		/// </summary>
 		public static void QuitApp() {
-#if UNITY_EDITOR
-			Debug.Log("Quit Requested.");
-			UnityEditor.EditorApplication.isPlaying = false;
-#else
-			Application.Quit();
-#endif
+			SystemUtilityInternal.QuitApp();
 		}
 	}
 }

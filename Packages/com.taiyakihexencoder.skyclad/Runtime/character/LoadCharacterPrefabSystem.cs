@@ -1,4 +1,5 @@
 ﻿using System.Runtime.InteropServices;
+using skyclad.internalProc;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
@@ -175,9 +176,8 @@ namespace skyclad.character {
 			}.Schedule(query, state.Dependency);
 			state.Dependency = requests.Dispose(state.Dependency);
 
-			state.Dependency = new SkycladECSUtility.DestroyJob {
-				commandBuffer = commandBuffer,
-			}.Schedule(requestQuery, state.Dependency);
+			state.Dependency = commandBuffer.Destroy()
+				.Schedule(requestQuery, state.Dependency);
 		}
 
 		private readonly EntityCommandBuffer CreateCommandBuffer(ref SystemState state) {

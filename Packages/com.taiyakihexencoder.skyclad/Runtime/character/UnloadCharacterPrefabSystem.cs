@@ -3,6 +3,7 @@ using Unity.Entities;
 using Unity.Jobs;
 
 namespace skyclad.character {
+	using internalProc;
 	/// <summary>
 	/// 個別のキャラクターPrefabのアンロード
 	/// </summary>
@@ -51,9 +52,8 @@ namespace skyclad.character {
 
 			EntityCommandBuffer commandBuffer = CreateCommandBuffer(ref state);
 
-			state.Dependency = new SkycladECSUtility.DestroyJob {
-				commandBuffer = commandBuffer,
-			}.Schedule(requestQuery, state.Dependency);
+			state.Dependency = commandBuffer.Destroy()
+				.Schedule(requestQuery, state.Dependency);
 		}
 
 		private readonly EntityCommandBuffer CreateCommandBuffer(ref SystemState state) {

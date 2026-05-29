@@ -4,6 +4,7 @@ using Unity.Entities;
 using UnityEngine;
 
 namespace skyclad.userData {
+	using internalProc;
 	public static class UserDataLoader {
 		private const string PATH = "transaction";
 		private const string FILE_NAME = "userData_{0:D3}.bytes";
@@ -33,12 +34,10 @@ namespace skyclad.userData {
 				}
 
 				SkycladUtility.Async.Post(() => {
-					userDataEntity = SkycladUtility.ECS.CreateEntity(
-						"User data", 
-						(manager, entity) => {
-							manager.AddComponentData(entity, loadedUserData);
-						}
-					);
+					userDataEntity = ECSUtilityInternal.EntityManager
+						.CreateEntityBuilder()
+						.AddRW<UserDataComponent>()
+						.Build("User data", loadedUserData);
 				});
 			});
 		}

@@ -2,6 +2,7 @@
 using Unity.Entities;
 
 namespace skyclad {
+	using internalProc;
 	/// <summary>
 	/// NavigatorPush, NavigatorPopを使って遷移・戻りを実現する。
 	/// Backstackのトップが変更されたフレームにSingletonのNavigatorTopChangedが有効になるので、
@@ -24,7 +25,7 @@ namespace skyclad {
 
 			EntityManager entityManager = state.EntityManager;
 			backstackEntity = entityManager.CreateEntity(
-				ComponentType.ReadWrite<NavigatorBackstack>(),
+				ComponentType.ReadWrite<InternalNavigatorBackstack>(),
 				ComponentType.ReadWrite<NavigatorTopChanged>()
 			);
 			entityManager.SetComponentEnabled<NavigatorTopChanged>(backstackEntity, false);
@@ -34,30 +35,10 @@ namespace skyclad {
 			bool navigatorTopChanged = false;
 			if (!pushQuery.IsEmpty) {
 				NativeArray<NavigatorPush> pushes = pushQuery.ToComponentDataArray<NavigatorPush>(Allocator.Temp);
-				DynamicBuffer<NavigatorBackstack> backstack = SystemAPI.GetBuffer<NavigatorBackstack>(backstackEntity);
+				DynamicBuffer<InternalNavigatorBackstack> backstack = SystemAPI.GetBuffer<InternalNavigatorBackstack>(backstackEntity);
 
 				foreach(NavigatorPush push in pushes) {
-					if (!push.popupTo.IsEmpty) {
-						// popup
-						for (int i = backstack.Length-1; i >= 0; i--) {
-							if (backstack[i].path == push.popupTo) {
-								for (int j = backstack.Length-1; j > i; --j) {
-									backstack.RemoveAt(j);
-								}
-
-								if (push.inclusive) {
-									backstack.RemoveAt(i);
-								}
-								break;
-							}
-						}
-					}
-
-					backstack.Add(
-						new NavigatorBackstack{
-							path = push.path,
-						}
-					);
+					backstack.Push(push.path, push.popupTo, push.inclusive);
 					navigatorTopChanged = true;
 				}
 				pushes.Dispose();
@@ -66,25 +47,19 @@ namespace skyclad {
 			}
 
 			if (!popQuery.IsEmpty) {
-				NativeArray<NavigatorPop> pops = popQuery.ToComponentDataArray<NavigatorPop>(Allocator.Temp);
-				DynamicBuffer<NavigatorBackstack> backstack = SystemAPI.GetBuffer<NavigatorBackstack>(backstackEntity);
+				DynamicBuffer<InternalNavigatorBackstack> backstack = SystemAPI.GetBuffer<InternalNavigatorBackstack>(backstackEntity);
+				backstack.Pop(popQuery.CalculateEntityCount());
 
-				foreach(NavigatorPop pop in pops) {
-					if (backstack.Length > 0) {
-						backstack.RemoveAt(backstack.Length-1);
-					}
-				}
 				navigatorTopChanged = true;
-				pops.Dispose();
 				EntityCommandBuffer commandBuffer = CreateCommandBuffer(ref state);
-				commandBuffer.DestroyEntity(pushQuery, EntityQueryCaptureMode.AtPlayback);
+				commandBuffer.DestroyEntity(popQuery, EntityQueryCaptureMode.AtPlayback);
 			}
 
 			// 変更の検知
 			EntityManager entityManager = state.EntityManager;
 			entityManager.SetComponentEnabled<NavigatorTopChanged>(backstackEntity, navigatorTopChanged);
 			if (navigatorTopChanged) {
-				DynamicBuffer<NavigatorBackstack> backstack = SystemAPI.GetBuffer<NavigatorBackstack>(backstackEntity);
+				DynamicBuffer<InternalNavigatorBackstack> backstack = SystemAPI.GetBuffer<InternalNavigatorBackstack>(backstackEntity);
 				entityManager.SetComponentData(
 					backstackEntity, 
 					new NavigatorTopChanged {

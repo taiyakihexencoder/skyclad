@@ -5,6 +5,7 @@ using Unity.Mathematics;
 using Unity.Physics;
 using Unity.Transforms;
 using UnityEngine.Assertions;
+using UnityEngine.XR;
 
 namespace skyclad.field {
 	public static class FieldMeshLoader {
@@ -83,8 +84,20 @@ namespace skyclad.field {
 							_blobs.Add(fieldMeshId, colliders);
 						}
 
+						EntityManager entityManager = SkycladUtility.ECS.EntityManager;
+						IEntityBuilder builder = entityManager.CreateEntityBuilder(_archetype);
 						for(int i = 0; i < meshes.Count; ++i) {
-							SkycladUtility.ECS.CreateEntity(meshes[i].name, _archetype, (manager, e) => MakeEntity(fieldMeshId, manager, e, colliders[i]));
+							Entity entity = builder.Build(
+								meshes[i].name,
+								new PhysicsCollider { Value = colliders[i], },
+								LocalTransform.FromPositionRotationScale(float3.zero, quaternion.identity, 1.0f),
+								new LocalToWorld{ Value = float4x4.identity, },
+								new FieldMeshComponent { meshId = fieldMeshId, }
+							);
+							entityManager.AddSharedComponent(
+								entity,
+								new PhysicsWorldIndex{ Value = SkycladUtility.ECS.ENABLED_PHYSICS_INDEX,}
+							);
 						}
 
 						SkycladUtility.ECS.ExecuteCommandBufferTemp(
@@ -97,24 +110,6 @@ namespace skyclad.field {
 			}
 		}
 
-		private static void MakeEntity(int meshId, EntityManager entityManager, Entity entity, BlobAssetReference<Collider> collider) {
-			entityManager.SetComponentData(entity, new PhysicsCollider { Value = collider, });
-
-			entityManager.SetComponentData(
-				entity,
-				LocalTransform.FromPositionRotationScale(float3.zero, quaternion.identity, 1.0f)
-			);
-			entityManager.SetComponentData(
-				entity,
-				new LocalToWorld{ Value = float4x4.identity, }
-			);
-			entityManager.SetComponentData(
-				entity,
-				new FieldMeshComponent { meshId = meshId, }
-			);
-			entityManager.AddSharedComponent(entity, new PhysicsWorldIndex{ Value = SkycladUtility.ECS.ENABLED_PHYSICS_INDEX,});
-		}
-
 		public static void UnloadMeshResources(int fieldMeshId) {
 			if (_blobs.TryGetValue(fieldMeshId, out BlobAssetReference<Collider>[] blobArray)) {
 				foreach(BlobAssetReference<Collider> blob in blobArray) {
@@ -123,6 +118,11 @@ namespace skyclad.field {
 					}
 				}
 				_blobs.Remove(fieldMeshId);
+			}
+
+			string address = FieldMeshId.GetAddress(fieldMeshId);
+			if (address != null) {
+				SkycladUtility.Resource.Unload(address);
 			}
 		}
 	}

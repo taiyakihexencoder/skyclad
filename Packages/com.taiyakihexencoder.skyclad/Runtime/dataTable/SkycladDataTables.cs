@@ -146,13 +146,9 @@ namespace skyclad {
 			EntityManager entityManager, 
 			FixedString64Bytes entityName
 		) where SIGNAL : unmanaged, IComponentData {
-			Entity entity = entityManager.CreateEntity();
-			
-			#if UNITY_EDITOR
-			entityManager.SetName(entity, entityName);
-			#endif
-			entityManager.AddComponent<SIGNAL>(entity);
-
+			entityManager.CreateEntityBuilder()
+				.AddRW<SIGNAL>()
+				.Build(entityName);
 		}
 	}
 

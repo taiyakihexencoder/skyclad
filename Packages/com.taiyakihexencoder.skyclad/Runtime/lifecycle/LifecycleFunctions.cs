@@ -1,4 +1,5 @@
 ﻿using System.Threading;
+using skyclad.internalProc;
 using Unity.Entities;
 using Unity.Physics;
 using Unity.Physics.Authoring;
@@ -18,20 +19,15 @@ namespace skyclad.lifecycle {
 				EntityManager entityManager = world.EntityManager;
 
 				using (process.Child("Initialize physics")) {
-					PhysicsStep physicsStep = PhysicsStep.Default;
-					physicsStep.SynchronizeCollisionWorld = 1;
-					physicsStep.SimulationType = SimulationType.UnityPhysics;
-					Entity entity = entityManager.CreateSingleton(physicsStep, "Physics");
-			
-					// Debug
-					entityManager.AddComponentData(entity, new PhysicsDebugDisplayData { 
-						DrawColliders = 1, 
-					});
+					SystemUtilityInternal.ApplyPhysics(
+						world: world, 
+						drawDebugColliders: true
+					);
 				}
 			}
 
 			// (仮)
-			// EnterAdventure(world, 0);
+			EnterAdventure(world, 0);
 		}
 
 		/// <summary>

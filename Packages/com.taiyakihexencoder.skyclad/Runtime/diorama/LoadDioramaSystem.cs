@@ -3,6 +3,7 @@ using Unity.Entities;
 using Unity.Physics;
 
 namespace skyclad {
+	using internalProc;
 	[UpdateInGroup(typeof(SkycladDioramaSystemGroup))]
 	public partial struct LoadDioramaSystem : ISystem {
 		private EntityQuery query;
@@ -51,9 +52,8 @@ namespace skyclad {
 				}.ScheduleParallel(physicsCharacterQuery, state.Dependency);
 
 				// 読込が完了
-				state.Dependency = new SkycladECSUtility.DestroyJob {
-					commandBuffer = commandBuffer,
-				}.Schedule(waitQuery, state.Dependency);
+				state.Dependency = commandBuffer.Destroy()
+					.Schedule(waitQuery, state.Dependency);
 			}
 		}
 

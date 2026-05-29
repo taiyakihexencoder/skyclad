@@ -826,7 +826,7 @@ PlayerSettings:
   webWasm2023: 0
   webEnableSubmoduleStrippingCompatibility: 0
   scriptingDefineSymbols:
-    Standalone: ENABLE_UNITY_PHYSICS_RUNTIME_DEBUG_DISPLAY
+    Standalone: ENABLE_UNITY_PHYSICS_RUNTIME_DEBUG_DISPLAY;UNITY_PIPELINE_URP
   additionalCompilerArguments: {}
   platformArchitecture: {}
   scriptingBackend:

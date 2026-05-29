@@ -10,10 +10,6 @@ namespace skyclad {
 
 	public struct NavigatorPop : IComponentData { }
 
-	internal struct NavigatorBackstack : IBufferElementData {
-		internal FixedString64Bytes path;
-	}
-
 	public struct NavigatorTopChanged : IComponentData, IEnableableComponent {
 		public FixedString64Bytes path;
 	}

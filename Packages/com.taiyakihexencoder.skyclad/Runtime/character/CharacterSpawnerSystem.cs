@@ -25,7 +25,7 @@ namespace skyclad.character {
 			EntityCommandBuffer.ParallelWriter commandBuffer = CreateCommandBuffer(ref state).AsParallelWriter();
 			NativeArray<SpawnerComponent> spawners = query.ToComponentDataArray<SpawnerComponent>(Allocator.TempJob);
 
-			state.Dependency = new SpawnJob{
+			state.Dependency = new SpawnJob {
 				spawners = spawners,
 				commandBuffer = commandBuffer,
 			}.ScheduleParallel(requestQuery, state.Dependency);

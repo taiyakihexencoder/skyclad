@@ -3,14 +3,15 @@ using Unity.Entities;
 using Unity.Jobs;
 
 namespace skyclad {
+	using internalProc;
 	public static partial class SkycladUtility {
 		public static class ECS {
 			public const uint DISABLED_PHYSICS_INDEX = 141;
 			public const uint ENABLED_PHYSICS_INDEX = 0;
 			public const float DAMAGED_INVINCIBLE_SECONDS = 0.25f;
 
-			public static World World => World.DefaultGameObjectInjectionWorld;
-			public static EntityManager EntityManager => World.EntityManager;
+			public static World World => ECSUtilityInternal.World;
+			public static EntityManager EntityManager => ECSUtilityInternal.EntityManager;
 			public static Entity CreateEntity(FixedString64Bytes name, System.Action<EntityManager, Entity> action) {
 				EntityManager entityManager = EntityManager;
 				Entity entity = entityManager.CreateEntity();
@@ -33,19 +34,11 @@ namespace skyclad {
 			/// </summary>
 			/// <param name="action"></param>
 			public static void ExecuteCommandBufferTemp(System.Action<EntityCommandBuffer> action) {
-				EntityCommandBuffer commandBuffer = new EntityCommandBuffer(Allocator.Temp);
-				action(commandBuffer);
-				commandBuffer.Playback(EntityManager);
-				commandBuffer.Dispose();
+				ECSUtilityInternal.ExecuteCommandBufferTemp(action);
 			}
-
+			
 			public static void ExecuteCommandBufferTempJob(System.Func<EntityCommandBuffer, JobHandle> job) {
-				EntityCommandBuffer commandBuffer = new EntityCommandBuffer(Allocator.TempJob);
-
-				job(commandBuffer).Complete();
-
-				commandBuffer.Playback(EntityManager);
-				commandBuffer.Dispose();
+				ECSUtilityInternal.ExecuteCommandBufferTempJob(job);
 			}
 		}
 	}

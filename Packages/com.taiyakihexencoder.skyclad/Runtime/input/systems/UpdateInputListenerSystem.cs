@@ -88,7 +88,7 @@ namespace skyclad.input {
 				}
 			);
 #if UNITY_EDITOR
-			commandBuffer.SetName(entity, "Update Input Listener Entity");
+			commandBuffer.SetName(entity, "Push Input Listener Entity");
 #endif
 			return entity;
 		}
@@ -113,7 +113,7 @@ namespace skyclad.input {
 			);
 
 #if UNITY_EDITOR
-			entityManager.SetName(entity, "Update Input Listener Entity");
+			entityManager.SetName(entity, "Push Input Listener Entity");
 #endif
 			return entity;
 		}

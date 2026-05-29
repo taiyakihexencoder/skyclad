@@ -2,6 +2,8 @@
 using Unity.Entities;
 
 namespace skyclad {
+	using internalProc;
+
 	[UpdateInGroup(typeof(SkycladDioramaSystemGroup))]
 	public partial struct UnloadDioramaSystem : ISystem {
 		private EntityQuery query;
@@ -40,9 +42,8 @@ namespace skyclad {
 				}.Schedule(query, state.Dependency);
 			} else if (!waitQuery.IsEmpty && subTaskQuery.IsEmpty) {
 				// Unload完了
-				state.Dependency = new SkycladECSUtility.DestroyJob {
-					commandBuffer = commandBuffer,
-				}.Schedule(waitQuery, state.Dependency);
+				state.Dependency = commandBuffer.Destroy()
+					.Schedule(waitQuery, state.Dependency);
 			}
 		}
 

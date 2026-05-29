@@ -68,7 +68,7 @@ namespace skyclad {
 					Entity requestEntity = entityManager.CreateEntity(
 						entityManager.CreateArchetype(ComponentType.ReadWrite<RequestUpdateInputListenerComponent>())
 					);
-					requestEntity.Name(entityManager, "Update Input Listener Request");
+					requestEntity.Name(entityManager, "Push Input Listener Request");
 					entityManager.SetComponentData(
 						requestEntity, 
 						new RequestUpdateInputListenerComponent {
@@ -125,7 +125,7 @@ namespace skyclad {
 
 				if (enabled) {
 					Entity requestEntity = commandBuffer.CreateEntity();
-					requestEntity.Name(commandBuffer, "Update Input Listener Request");
+					requestEntity.Name(commandBuffer, "Push Input Listener Request");
 					commandBuffer.AddComponent(
 						requestEntity, 
 						new RequestUpdateInputListenerComponent {
@@ -152,7 +152,7 @@ namespace skyclad {
 				Entity requestEntity = entityManager.CreateEntity(
 					entityManager.CreateArchetype(ComponentType.ReadWrite<RequestUpdateInputListenerComponent>())
 				);
-				requestEntity.Name(entityManager, "Update Input Listener Request");
+				requestEntity.Name(entityManager, "Push Input Listener Request");
 				entityManager.SetComponentData(
 					requestEntity, 
 					new RequestUpdateInputListenerComponent {
@@ -174,7 +174,7 @@ namespace skyclad {
 				bool enabled
 			) {
 				Entity requestEntity = commandBuffer.CreateEntity();
-				requestEntity.Name(commandBuffer, "Update Input Listener Request");
+				requestEntity.Name(commandBuffer, "Push Input Listener Request");
 				commandBuffer.AddComponent(
 					requestEntity, 
 					new RequestUpdateInputListenerComponent {
