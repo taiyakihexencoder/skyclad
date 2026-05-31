@@ -1,0 +1,247 @@
+﻿using UnityEngine;
+
+namespace skyclad.internalProc {
+	public static class SaveUtilityInternal {
+		private const string LONG_UPPER = ".up";
+		private const string LONG_LOWER = ".low";
+		private const string ARRAY_ELEMENT = ".data";
+		private const string ARRAY_LENGTH = ".length";
+
+		public static class Prefs {
+			public static bool GetFlag(string key, bool defaultValue = false) {
+				int value = PlayerPrefs.GetInt(key, -1);
+				return value == -1 ? defaultValue : value == 1;
+			}
+
+			public static bool[] GetFlagArray(string key, bool defaultValue = false) {
+				int length = GetInt($"{key}{ARRAY_LENGTH}", -1);
+				if (length == -1) {
+					return null;
+				} else {
+					bool[] array = new bool[length];
+					for (int i = 0; i < length; ++i) {
+						array[i] = GetFlag($"{key}{ARRAY_ELEMENT}[{i}]", defaultValue);
+					}
+					return array;
+				}
+			}
+
+
+			public static bool TryGetFlag(string key, out bool value) {
+				if (PlayerPrefs.HasKey(key)) {
+					value = GetFlag(key);
+					return true;
+				} else {
+					value = false;
+					return false;
+				}
+			}
+
+			public static int GetInt(string key, int defaultValue = 0) {
+				return PlayerPrefs.GetInt(key, defaultValue);
+			}
+
+			public static int[] GetIntArray(string key, int defaultValue = 0) {
+				int length = GetInt($"{key}{ARRAY_LENGTH}", -1);
+				if (length == -1) {
+					return null;
+				} else {
+					int[] array = new int[length];
+					for (int i = 0; i < length; ++i) {
+						array[i] = GetInt($"{key}{ARRAY_ELEMENT}[{i}]", defaultValue);
+					}
+					return array;
+				}
+			}
+
+			public static bool TryGetInt(string key, out int value) {
+				if (PlayerPrefs.HasKey(key)) {
+					value = GetInt(key);
+					return true;
+				} else {
+					value = 0;
+					return false;
+				}
+			}
+
+			public static long GetLong(string key, long defaultValue = 0L) {
+				int upper = PlayerPrefs.GetInt($"{key}{LONG_UPPER}", -1);
+				uint lower = (uint)PlayerPrefs.GetInt($"{key}{LONG_LOWER}", 0);
+				if (upper == -1) {
+					return defaultValue;
+				} else {
+					return ((long)upper << 32) | lower;
+				}
+			}
+
+			public static long[] GetLongArray(string key, long defaultValue = 0L) {
+				int length = PlayerPrefs.GetInt($"{key}{ARRAY_LENGTH}", -1);
+				if (length == -1) {
+					return null;
+				} else {
+					long[] array = new long[length];
+					for (int i = 0; i < length; ++i) {
+						array[i] = GetLong($"{key}{ARRAY_ELEMENT}[{i}]", defaultValue);
+					}
+					return array;
+				}
+			}
+
+			public static bool TryGetLong(string key, out long value) {
+				if (PlayerPrefs.HasKey(key)) {
+					value = GetLong(key);
+					return true;
+				} else {
+					value = 0L;
+					return false;
+				}
+			}
+
+
+			public static float GetFloat(string key, float defaultValue = 0f) {
+				return PlayerPrefs.GetFloat(key, defaultValue);
+			}
+
+			public static float[] GetFloatArray(string key, float defaultValue = 0) {
+				int length = PlayerPrefs.GetInt($"{key}{ARRAY_LENGTH}", -1);
+				if (length == -1) {
+					return null;
+				} else {
+					float[] array = new float[length];
+					for (int i = 0; i < length; ++i) {
+						array[i] = GetFloat($"{key}{ARRAY_ELEMENT}[{i}]", defaultValue);
+					}
+					return array;
+				}
+			}
+
+
+			public static bool TryGetFloat(string key, out float value) {
+				if (PlayerPrefs.HasKey(key)) {
+					value = GetFloat(key);
+					return true;
+				} else {
+					value = 0f;
+					return false;
+				}
+			}
+
+			public static string GetString(string key, string defaultValue = null) {
+				return PlayerPrefs.GetString(key, defaultValue);
+			}
+
+			public static bool TryGetString(string key, out string value) {
+				if (PlayerPrefs.HasKey(key)) {
+					value = GetString(key);
+					return true;
+				} else {
+					value = null;
+					return false;
+				}
+			}
+
+			public static T Get<T>(string key, T defaultValue = default) {
+				string json = GetString(key);
+				return json == null ? defaultValue : JsonUtility.FromJson<T>(json);
+			}
+
+			public static bool TryGet<T>(string key, out T value) {
+				if (PlayerPrefs.HasKey(key)) {
+					value = Get<T>(key);
+					return true;
+				} else {
+					value = default;
+					return false;
+				}
+			}
+
+			public static T[] GetArray<T>(string key, T defaultValue = default) {
+				int length = PlayerPrefs.GetInt($"{key}{ARRAY_LENGTH}", -1);
+				if (length == -1) {
+					return null;
+				} else {
+					T[] array = new T[length];
+					for (int i = 0; i < length; ++i) {
+						array[i] = Get($"{key}{ARRAY_ELEMENT}[{i}]", defaultValue);
+					}
+					return array;
+				}
+			}
+
+			public static void Set(string key, bool value) {
+				PlayerPrefs.SetInt(key, value ? 1 : 0);
+			}
+
+			public static void Set(string key, bool[] values) {
+				PlayerPrefs.SetInt($"{key}{ARRAY_LENGTH}", values.Length);
+				for (int i = 0; i < values.Length; ++i) {
+					Set($"{key}{ARRAY_ELEMENT}[{i}]", values[i]);
+				}
+			}
+
+			public static void Set(string key, int value) {
+				PlayerPrefs.SetInt(key, value);
+			}
+
+			public static void Set(string key, int[] values) {
+				PlayerPrefs.SetInt($"{key}{ARRAY_LENGTH}", values.Length);
+				for (int i = 0; i < values.Length; ++i) {
+					Set($"{key}{ARRAY_ELEMENT}[{i}]", values[i]);
+				}
+			}
+
+			public static void Set(string key, long value) {
+				int upper = (int)(value >> 32);
+				int lower = (int)(value & 0xFFFFFFFF);
+
+				PlayerPrefs.SetInt($"{key}{LONG_UPPER}", upper);
+				PlayerPrefs.SetInt($"{key}{LONG_LOWER}", lower);
+			}
+
+			public static void Set(string key, long[] values) {
+				PlayerPrefs.SetInt($"{key}{ARRAY_LENGTH}", values.Length);
+				for (int i = 0; i < values.Length; ++i) {
+					Set($"{key}{ARRAY_ELEMENT}[{i}]", values[i]);
+				}
+			}
+
+			public static void Set(string key, float value) {
+				PlayerPrefs.SetFloat(key, value);
+			}
+
+			public static void Set(string key, float[] values) {
+				PlayerPrefs.SetInt($"{key}{ARRAY_LENGTH}", values.Length);
+				for (int i = 0; i < values.Length; ++i) {
+					Set($"{key}{ARRAY_ELEMENT}[{i}]", values[i]);
+				}
+			}
+
+			public static void Set(string key, string value) {
+				PlayerPrefs.SetString(key, value);
+			}
+
+			public static void Set<T>(string key, T value) {
+				Set(key, JsonUtility.ToJson(key));
+			}
+
+			public static void Set<T>(string key, T[] values) {
+				PlayerPrefs.SetInt($"{key}{ARRAY_LENGTH}", values.Length);
+				for (int i = 0; i < values.Length; ++i) {
+					Set($"{key}{ARRAY_ELEMENT}[{i}]", values[i]);
+				}
+			}
+
+			public static void Save() {
+				PlayerPrefs.Save();
+			}
+
+			public static void DeleteKey(string key) {
+				PlayerPrefs.DeleteKey(key);
+			}
+
+			public static void DeleteAll() {
+				PlayerPrefs.DeleteAll();
+			}
+		}
+	}
+}
