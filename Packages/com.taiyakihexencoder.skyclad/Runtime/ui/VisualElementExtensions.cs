@@ -84,7 +84,7 @@ namespace skyclad {
 		/// <param name="durationMillis"></param>
 		public static void ChangeLabelColor(this Label ve, Color to, int durationMillis) {
 			ve.experimental.animation
-				.Start(ve.style.color.value, to, durationMillis, (ve, color) => ve.style.color = to );
+				.Start(ve.style.color.value, to, durationMillis, (ve, color) => ve.style.color = color );
 		}
 
 		/// <summary>
@@ -95,7 +95,7 @@ namespace skyclad {
 		/// <param name="durationMillis"></param>
 		public static void ChangeBackgroundColor(this VisualElement ve, Color to, int durationMillis) {
 			ve.experimental.animation
-				.Start(ve.style.backgroundColor.value, to, durationMillis, (ve, color) => ve.style.backgroundColor = to );
+				.Start(ve.style.backgroundColor.value, to, durationMillis, (ve, color) => ve.style.backgroundColor = color );
 		}
 
 		/// <summary>
