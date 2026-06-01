@@ -88,6 +88,17 @@ namespace skyclad {
 		}
 
 		/// <summary>
+		/// 背景色を変更する
+		/// </summary>
+		/// <param name="ve"></param>
+		/// <param name="to"></param>
+		/// <param name="durationMillis"></param>
+		public static void ChangeBackgroundColor(this VisualElement ve, Color to, int durationMillis) {
+			ve.experimental.animation
+				.Start(ve.style.backgroundColor.value, to, durationMillis, (ve, color) => ve.style.backgroundColor = to );
+		}
+
+		/// <summary>
 		/// アニメーション停止
 		/// </summary>
 		/// <param name="ve"></param>
