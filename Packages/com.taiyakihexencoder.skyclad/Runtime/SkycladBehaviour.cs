@@ -23,13 +23,13 @@ namespace skyclad {
 
 		private void Awake() {
 			EntityManager entityManager = ECSUtilityInternal.EntityManager;
-			_loadUserDataRequestQuery = new EntityQueryBuilder()
+			_loadUserDataRequestQuery = new EntityQueryBuilder(Allocator.Temp)
 				.WithAll<InternalRequestLoadUserDataComponent>()
 				.Build(entityManager);
-			_saveUserDataRequestQuery = new EntityQueryBuilder()
+			_saveUserDataRequestQuery = new EntityQueryBuilder(Allocator.Temp)
 				.WithAll<InternalRequestSaveUserDataComponent>()
 				.Build(entityManager);
-			_unloadUserDataRequestQuery = new EntityQueryBuilder()
+			_unloadUserDataRequestQuery = new EntityQueryBuilder(Allocator.Temp)
 				.WithAll<InternalRequestUnloadUserDataComponent>()
 				.Build(entityManager);
 		}
