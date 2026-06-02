@@ -1,4 +1,5 @@
-﻿using Unity.Collections;
+﻿using skyclad.internalProc;
+using Unity.Collections;
 using Unity.Entities;
 
 namespace skyclad.lifecycle {
@@ -55,6 +56,7 @@ namespace skyclad.lifecycle {
 					state.Dependency = new AddWaitTaskJob {
 						commandBuffer = CreateCommandBuffer(ref state),
 					}.Schedule(query, state.Dependency);
+
 					StartUnloadCustom(ref state);
 					break;
 				}
@@ -64,6 +66,7 @@ namespace skyclad.lifecycle {
 						state.Dependency = new DestroyJob {
 							commandBuffer = CreateCommandBuffer(ref state),
 						}.Schedule(waitQuery, state.Dependency);
+
 						StartUnloadSystem(ref state);
 					}
 					break;
@@ -74,6 +77,8 @@ namespace skyclad.lifecycle {
 						state.Dependency = new DestroyJob {
 							commandBuffer = CreateCommandBuffer(ref state),
 						}.Schedule(waitQuery, state.Dependency);
+
+						StartUnloadSaveData(ref state);
 					}
 					break;
 				}
@@ -110,11 +115,11 @@ namespace skyclad.lifecycle {
 		/// </summary>
 		/// <param name="state"></param>
 		private void StartUnloadCustom(ref SystemState state) {
-			EntityManager entityManager = state.EntityManager;
-			Entity customProcessEntity = entityManager.CreateEntity();
-			entityManager.AddComponent<BeforeWorldUnload>(customProcessEntity);
+			EntityCommandBuffer commandBuffer = CreateCommandBuffer(ref state);
+			Entity customProcessEntity = commandBuffer.CreateEntity();
+			commandBuffer.AddComponent<BeforeWorldUnload>(customProcessEntity);
 #if UNITY_EDITOR
-			entityManager.SetName(customProcessEntity, "Custom Process Before World Unload");
+			commandBuffer.SetName(customProcessEntity, "Custom Process Before World Unload");
 #endif			
 		}
 
@@ -123,20 +128,33 @@ namespace skyclad.lifecycle {
 		/// </summary>
 		/// <param name="state"></param>
 		private void StartUnloadSystem(ref SystemState state) {
-			EntityManager entityManager = state.EntityManager;
+			EntityCommandBuffer commandBuffer = CreateCommandBuffer(ref state);
 
 			foreach(int dioramaId in DioramaId.LaunchDioramas) {
-				Entity entity = entityManager.CreateEntity(unloadDioramaArchetype);
-				entityManager.SetComponentData(
+				Entity entity = commandBuffer.CreateEntity(unloadDioramaArchetype);
+				commandBuffer.SetComponent(
 					entity,
 					new RequestUnloadDioramaComponent {
 						id = dioramaId,
 					}
 				);
 #if UNITY_EDITOR
-				entityManager.SetName(entity, $"Unload Diorama:{dioramaId}");
+				commandBuffer.SetName(entity, $"Unload Diorama:{dioramaId}");
 #endif
 			}
+		}
+
+		/// <summary>
+		/// セーブデータのアンロード
+		/// </summary>
+		/// <param name="state"></param>
+		private void StartUnloadSaveData(ref SystemState state) {
+			EntityCommandBuffer commandBuffer = CreateCommandBuffer(ref state);
+			Entity entity = commandBuffer.CreateEntity();
+			commandBuffer.AddComponent(
+				entity,
+				new InternalRequestUnloadUserDataComponent { }
+			);
 		}
 
 		partial struct AddWaitTaskJob : IJobEntity {

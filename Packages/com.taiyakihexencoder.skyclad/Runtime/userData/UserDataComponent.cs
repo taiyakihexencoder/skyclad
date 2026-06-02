@@ -32,4 +32,5 @@ namespace skyclad.userData {
 
 		partial void SaveBinary(byte[] bytes);
 	}
+
 }

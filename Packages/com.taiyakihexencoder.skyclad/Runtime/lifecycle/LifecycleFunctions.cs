@@ -1,10 +1,8 @@
 ﻿using System.Threading;
-using skyclad.internalProc;
 using Unity.Entities;
-using Unity.Physics;
-using Unity.Physics.Authoring;
 
 namespace skyclad.lifecycle {
+	using internalProc;
 	public static class LifecycleFunctions {
 		/// <summary>
 		/// ゲーム立ち上げ
@@ -27,7 +25,7 @@ namespace skyclad.lifecycle {
 			}
 
 			// (仮)
-			EnterAdventure(world, 0);
+			// EnterAdventure(world, 0);
 		}
 
 		/// <summary>
@@ -39,11 +37,15 @@ namespace skyclad.lifecycle {
 			Entity entity = entityManager.CreateEntity();
 			entityManager.AddComponent<RequestEnterAdventureComponent>(entity);
 
-			System.Threading.Tasks.Task.Run(
-				async() => {
-					await userData.UserDataLoader.Load(saveDataSlot);
-				}
-			);
+			// セーブデータ読み込み
+			entityManager.CreateEntityBuilder()
+				.AddRW<InternalRequestLoadUserDataComponent>()
+				.Build(
+					"request load user data", 
+					new InternalRequestLoadUserDataComponent {
+						slot = saveDataSlot,
+					}
+				);
 		}
 
 		/// <summary>
@@ -54,11 +56,14 @@ namespace skyclad.lifecycle {
 			Entity entity = commandBuffer.CreateEntity();
 			commandBuffer.AddComponent<RequestEnterAdventureComponent>(entity);
 
-			System.Threading.Tasks.Task.Run(
-				async() => {
-					await userData.UserDataLoader.Load(saveDataSlot);
+			// セーブデータ読み込み
+			Entity loadEntity = commandBuffer.CreateEntity();
+			commandBuffer.AddComponent(
+				loadEntity, 
+				new InternalRequestLoadUserDataComponent {
+					slot = saveDataSlot,
 				}
-			);			
+			);
 		} 
 
 		/// <summary>

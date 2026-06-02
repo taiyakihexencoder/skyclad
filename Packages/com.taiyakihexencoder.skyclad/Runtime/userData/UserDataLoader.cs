@@ -34,12 +34,26 @@ namespace skyclad.userData {
 				}
 
 				SkycladUtility.Async.Post(() => {
-					userDataEntity = ECSUtilityInternal.EntityManager
-						.CreateEntityBuilder()
-						.AddRW<UserDataComponent>()
-						.Build("User data", loadedUserData);
+					ECSUtilityInternal.ExecuteCommandBufferTemp(
+						commandBuffer => {
+							userDataEntity = commandBuffer.CreateEntity();
+							commandBuffer.SetName(userDataEntity, "User data");
+							commandBuffer.AddComponent(userDataEntity, loadedUserData);
+						}
+					);
 				});
 			});
+		}
+
+		public static void RequestSave(EntityCommandBuffer commandBuffer, int slot) {
+			Entity requestEntity = commandBuffer.CreateEntity();
+			commandBuffer.SetName(requestEntity, "Request Save User Data");
+			commandBuffer.AddComponent(
+				requestEntity,
+				new InternalRequestSaveUserDataComponent{
+					slot = slot,
+				}
+			);
 		}
 
 		/// <summary>
@@ -92,14 +106,8 @@ namespace skyclad.userData {
 		/// <summary>
 		/// ロードした時のセーブデータで上書きする
 		/// </summary>
-		internal static void Replace() {
-			if (SkycladUtility.ECS.EntityManager.Exists(userDataEntity)) {
-				SkycladUtility.ECS.ExecuteCommandBufferTemp(
-					(commandBuffer) => {
-						commandBuffer.SetComponent(userDataEntity, loadedUserData);
-					}
-				);
-			}
+		public static void Replace(EntityCommandBuffer commandBuffer) {
+			commandBuffer.SetComponent(userDataEntity, loadedUserData);
 		}
 
 		private static string PreparePath(int slot) {
