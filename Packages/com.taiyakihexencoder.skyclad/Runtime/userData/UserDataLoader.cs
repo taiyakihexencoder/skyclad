@@ -4,11 +4,9 @@ using Unity.Entities;
 using UnityEngine;
 
 namespace skyclad.userData {
+	using System.Collections.Generic;
 	using internalProc;
 	public static class UserDataLoader {
-		private const string PATH = "transaction";
-		private const string FILE_NAME = "userData_{0:D3}.bytes";
-
 		private static Entity userDataEntity = Entity.Null;
 		private static UserDataComponent loadedUserData = UserDataComponent.Default;
 
@@ -111,11 +109,18 @@ namespace skyclad.userData {
 		}
 
 		private static string PreparePath(int slot) {
-			string basePath = Application.streamingAssetsPath + Path.DirectorySeparatorChar + PATH;
+			string basePath = Application.persistentDataPath + Path.DirectorySeparatorChar + SaveUtilityInternal.USER_DATA_PATH;
 			if (!Directory.Exists(basePath)) {
 				Directory.CreateDirectory(basePath);
 			}
-			return basePath + Path.DirectorySeparatorChar + string.Format(FILE_NAME, slot);
+			return basePath + Path.DirectorySeparatorChar + string.Format(SaveUtilityInternal.USER_DATA_FILE_NAME, slot);
+		}
+
+		/**
+		 * 保存済スロットのリストを取得する。
+		 */
+		public static List<int> GetSavedSlots() {
+			return SaveUtilityInternal.UserData.GetSavedSlots();
 		}
 	}
 }

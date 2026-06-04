@@ -1,11 +1,41 @@
-﻿using UnityEngine;
+﻿using System.Collections.Generic;
+using System.IO;
+using System.Text.RegularExpressions;
+using UnityEngine;
 
 namespace skyclad.internalProc {
 	public static class SaveUtilityInternal {
-		private const string LONG_UPPER = ".up";
-		private const string LONG_LOWER = ".low";
-		private const string ARRAY_ELEMENT = ".data";
-		private const string ARRAY_LENGTH = ".length";
+		public const string USER_DATA_PATH = "transaction";
+		public const string USER_DATA_FILE_NAME = "userData_{0:D3}.bytes";
+
+		private const string PREFS_LONG_UPPER = ".up";
+		private const string PREFS_LONG_LOWER = ".low";
+		private const string PREFS_ARRAY_ELEMENT = ".data";
+		private const string PREFS_ARRAY_LENGTH = ".length";
+
+		public static class UserData {
+			public static List<int> GetSavedSlots() {
+				try {
+					List<int> slots = new List<int>();
+
+					string absPath = Application.persistentDataPath + Path.DirectorySeparatorChar + USER_DATA_PATH + Path.DirectorySeparatorChar;
+					DirectoryInfo directory = new DirectoryInfo(absPath);
+
+					Regex regex = new Regex("userData_(?<idx>\\d{3})\\.bytes");
+					foreach(FileInfo file in directory.EnumerateFiles("*.bytes", SearchOption.AllDirectories)) {
+						Match match = regex.Match(file.Name);
+						if (match.Success) {
+							slots.Add(int.Parse(match.Groups["idx"].Value));
+						}
+					}
+					slots.Sort();
+					return slots;
+				} catch(IOException) {
+					// directory not found
+					return new List<int>();
+				}
+			}
+		}
 
 		public static class Prefs {
 			public static bool GetFlag(string key, bool defaultValue = false) {
@@ -14,13 +44,13 @@ namespace skyclad.internalProc {
 			}
 
 			public static bool[] GetFlagArray(string key, bool defaultValue = false) {
-				int length = GetInt($"{key}{ARRAY_LENGTH}", -1);
+				int length = GetInt($"{key}{PREFS_ARRAY_LENGTH}", -1);
 				if (length == -1) {
 					return null;
 				} else {
 					bool[] array = new bool[length];
 					for (int i = 0; i < length; ++i) {
-						array[i] = GetFlag($"{key}{ARRAY_ELEMENT}[{i}]", defaultValue);
+						array[i] = GetFlag($"{key}{PREFS_ARRAY_ELEMENT}[{i}]", defaultValue);
 					}
 					return array;
 				}
@@ -42,13 +72,13 @@ namespace skyclad.internalProc {
 			}
 
 			public static int[] GetIntArray(string key, int defaultValue = 0) {
-				int length = GetInt($"{key}{ARRAY_LENGTH}", -1);
+				int length = GetInt($"{key}{PREFS_ARRAY_LENGTH}", -1);
 				if (length == -1) {
 					return null;
 				} else {
 					int[] array = new int[length];
 					for (int i = 0; i < length; ++i) {
-						array[i] = GetInt($"{key}{ARRAY_ELEMENT}[{i}]", defaultValue);
+						array[i] = GetInt($"{key}{PREFS_ARRAY_ELEMENT}[{i}]", defaultValue);
 					}
 					return array;
 				}
@@ -65,8 +95,8 @@ namespace skyclad.internalProc {
 			}
 
 			public static long GetLong(string key, long defaultValue = 0L) {
-				int upper = PlayerPrefs.GetInt($"{key}{LONG_UPPER}", -1);
-				uint lower = (uint)PlayerPrefs.GetInt($"{key}{LONG_LOWER}", 0);
+				int upper = PlayerPrefs.GetInt($"{key}{PREFS_LONG_UPPER}", -1);
+				uint lower = (uint)PlayerPrefs.GetInt($"{key}{PREFS_LONG_LOWER}", 0);
 				if (upper == -1) {
 					return defaultValue;
 				} else {
@@ -75,13 +105,13 @@ namespace skyclad.internalProc {
 			}
 
 			public static long[] GetLongArray(string key, long defaultValue = 0L) {
-				int length = PlayerPrefs.GetInt($"{key}{ARRAY_LENGTH}", -1);
+				int length = PlayerPrefs.GetInt($"{key}{PREFS_ARRAY_LENGTH}", -1);
 				if (length == -1) {
 					return null;
 				} else {
 					long[] array = new long[length];
 					for (int i = 0; i < length; ++i) {
-						array[i] = GetLong($"{key}{ARRAY_ELEMENT}[{i}]", defaultValue);
+						array[i] = GetLong($"{key}{PREFS_ARRAY_ELEMENT}[{i}]", defaultValue);
 					}
 					return array;
 				}
@@ -103,13 +133,13 @@ namespace skyclad.internalProc {
 			}
 
 			public static float[] GetFloatArray(string key, float defaultValue = 0) {
-				int length = PlayerPrefs.GetInt($"{key}{ARRAY_LENGTH}", -1);
+				int length = PlayerPrefs.GetInt($"{key}{PREFS_ARRAY_LENGTH}", -1);
 				if (length == -1) {
 					return null;
 				} else {
 					float[] array = new float[length];
 					for (int i = 0; i < length; ++i) {
-						array[i] = GetFloat($"{key}{ARRAY_ELEMENT}[{i}]", defaultValue);
+						array[i] = GetFloat($"{key}{PREFS_ARRAY_ELEMENT}[{i}]", defaultValue);
 					}
 					return array;
 				}
@@ -156,13 +186,13 @@ namespace skyclad.internalProc {
 			}
 
 			public static T[] GetArray<T>(string key, T defaultValue = default) {
-				int length = PlayerPrefs.GetInt($"{key}{ARRAY_LENGTH}", -1);
+				int length = PlayerPrefs.GetInt($"{key}{PREFS_ARRAY_LENGTH}", -1);
 				if (length == -1) {
 					return null;
 				} else {
 					T[] array = new T[length];
 					for (int i = 0; i < length; ++i) {
-						array[i] = Get($"{key}{ARRAY_ELEMENT}[{i}]", defaultValue);
+						array[i] = Get($"{key}{PREFS_ARRAY_ELEMENT}[{i}]", defaultValue);
 					}
 					return array;
 				}
@@ -173,9 +203,9 @@ namespace skyclad.internalProc {
 			}
 
 			public static void Set(string key, bool[] values) {
-				PlayerPrefs.SetInt($"{key}{ARRAY_LENGTH}", values.Length);
+				PlayerPrefs.SetInt($"{key}{PREFS_ARRAY_LENGTH}", values.Length);
 				for (int i = 0; i < values.Length; ++i) {
-					Set($"{key}{ARRAY_ELEMENT}[{i}]", values[i]);
+					Set($"{key}{PREFS_ARRAY_ELEMENT}[{i}]", values[i]);
 				}
 			}
 
@@ -184,9 +214,9 @@ namespace skyclad.internalProc {
 			}
 
 			public static void Set(string key, int[] values) {
-				PlayerPrefs.SetInt($"{key}{ARRAY_LENGTH}", values.Length);
+				PlayerPrefs.SetInt($"{key}{PREFS_ARRAY_LENGTH}", values.Length);
 				for (int i = 0; i < values.Length; ++i) {
-					Set($"{key}{ARRAY_ELEMENT}[{i}]", values[i]);
+					Set($"{key}{PREFS_ARRAY_ELEMENT}[{i}]", values[i]);
 				}
 			}
 
@@ -194,14 +224,14 @@ namespace skyclad.internalProc {
 				int upper = (int)(value >> 32);
 				int lower = (int)(value & 0xFFFFFFFF);
 
-				PlayerPrefs.SetInt($"{key}{LONG_UPPER}", upper);
-				PlayerPrefs.SetInt($"{key}{LONG_LOWER}", lower);
+				PlayerPrefs.SetInt($"{key}{PREFS_LONG_UPPER}", upper);
+				PlayerPrefs.SetInt($"{key}{PREFS_LONG_LOWER}", lower);
 			}
 
 			public static void Set(string key, long[] values) {
-				PlayerPrefs.SetInt($"{key}{ARRAY_LENGTH}", values.Length);
+				PlayerPrefs.SetInt($"{key}{PREFS_ARRAY_LENGTH}", values.Length);
 				for (int i = 0; i < values.Length; ++i) {
-					Set($"{key}{ARRAY_ELEMENT}[{i}]", values[i]);
+					Set($"{key}{PREFS_ARRAY_ELEMENT}[{i}]", values[i]);
 				}
 			}
 
@@ -210,9 +240,9 @@ namespace skyclad.internalProc {
 			}
 
 			public static void Set(string key, float[] values) {
-				PlayerPrefs.SetInt($"{key}{ARRAY_LENGTH}", values.Length);
+				PlayerPrefs.SetInt($"{key}{PREFS_ARRAY_LENGTH}", values.Length);
 				for (int i = 0; i < values.Length; ++i) {
-					Set($"{key}{ARRAY_ELEMENT}[{i}]", values[i]);
+					Set($"{key}{PREFS_ARRAY_ELEMENT}[{i}]", values[i]);
 				}
 			}
 
@@ -225,9 +255,9 @@ namespace skyclad.internalProc {
 			}
 
 			public static void Set<T>(string key, T[] values) {
-				PlayerPrefs.SetInt($"{key}{ARRAY_LENGTH}", values.Length);
+				PlayerPrefs.SetInt($"{key}{PREFS_ARRAY_LENGTH}", values.Length);
 				for (int i = 0; i < values.Length; ++i) {
-					Set($"{key}{ARRAY_ELEMENT}[{i}]", values[i]);
+					Set($"{key}{PREFS_ARRAY_ELEMENT}[{i}]", values[i]);
 				}
 			}
 
