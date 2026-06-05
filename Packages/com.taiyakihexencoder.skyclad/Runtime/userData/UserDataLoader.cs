@@ -1,10 +1,10 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
 using System.Threading.Tasks;
 using Unity.Entities;
 using UnityEngine;
 
 namespace skyclad.userData {
-	using System.Collections.Generic;
 	using internalProc;
 	public static class UserDataLoader {
 		private static Entity userDataEntity = Entity.Null;
@@ -35,7 +35,7 @@ namespace skyclad.userData {
 					ECSUtilityInternal.ExecuteCommandBufferTemp(
 						commandBuffer => {
 							userDataEntity = commandBuffer.CreateEntity();
-							commandBuffer.SetName(userDataEntity, "User data");
+							commandBuffer.SetDebugName(userDataEntity, "User data");
 							commandBuffer.AddComponent(userDataEntity, loadedUserData);
 						}
 					);
@@ -45,7 +45,7 @@ namespace skyclad.userData {
 
 		public static void RequestSave(EntityCommandBuffer commandBuffer, int slot) {
 			Entity requestEntity = commandBuffer.CreateEntity();
-			commandBuffer.SetName(requestEntity, "Request Save User Data");
+			commandBuffer.SetDebugName(requestEntity, "Request Save User Data");
 			commandBuffer.AddComponent(
 				requestEntity,
 				new InternalRequestSaveUserDataComponent{

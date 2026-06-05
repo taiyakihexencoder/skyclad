@@ -7,6 +7,16 @@ namespace skyclad.internalProc {
 		public static World World => World.DefaultGameObjectInjectionWorld;
 		public static EntityManager EntityManager => World.EntityManager;
 
+		[System.Diagnostics.Conditional("UNITY_EDITOR")]
+		public static void SetDebugName(this EntityCommandBuffer commandBuffer, Entity entity, FixedString64Bytes name) {
+			commandBuffer.SetName(entity, name);
+		}
+
+		[System.Diagnostics.Conditional("UNITY_EDITOR")]
+		public static void SetDebugName(this EntityManager entityManager, Entity entity, FixedString64Bytes name) {
+			entityManager.SetName(entity, name);
+		}
+
 		public static void ExecuteCommandBufferTemp(System.Action<EntityCommandBuffer> action) {
 			EntityCommandBuffer commandBuffer = new EntityCommandBuffer(Allocator.Temp);
 			action(commandBuffer);
