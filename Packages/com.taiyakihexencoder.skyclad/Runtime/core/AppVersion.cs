@@ -10,6 +10,26 @@
 			this.revision = revision;
 		}
 
+		public static bool operator <(AppVersion v1, AppVersion v2) {
+			return ((System.IComparable<AppVersion>)v1).CompareTo(v2) < 0;
+		}
+
+		public static bool operator >(AppVersion v1, AppVersion v2) {
+			return ((System.IComparable<AppVersion>)v1).CompareTo(v2) > 0;
+		}
+
+		public static bool operator ==(AppVersion v1, AppVersion v2) {
+			return v1.major == v2.major &&
+				v1.minor == v2.minor &&
+				v1.revision == v2.revision;
+		}
+
+		public static bool operator !=(AppVersion v1, AppVersion v2) {
+			return v1.major != v2.major ||
+				v1.minor != v2.minor ||
+				v1.revision != v2.revision;
+		}
+
 		public static bool TryParse(string text, out AppVersion version) {
 			string[] split = text.Split('.');
 			if (split.Length >= 3 &&
