@@ -4,6 +4,12 @@
 		public byte minor;
 		public byte revision;
 
+		public AppVersion(byte major, byte minor, byte revision) {
+			this.major = major;
+			this.minor = minor;
+			this.revision = revision;
+		}
+
 		public static bool TryParse(string text, out AppVersion version) {
 			string[] split = text.Split('.');
 			if (split.Length >= 3 &&
