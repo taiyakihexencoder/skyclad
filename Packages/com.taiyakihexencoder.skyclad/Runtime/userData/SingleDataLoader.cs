@@ -35,6 +35,12 @@
 		/// </summary>
 		/// <param name="component"></param>
 		protected virtual void OnDispose(T component) { }
+		protected virtual void OnLoadCompleted(Entity entity, EntityCommandBuffer commandbuffer) {
+			D.Log($"Load:{_path}");
+		}
+		protected virtual void OnSaveCompleted() {
+			D.Log($"Save:{_path}");
+		}
 
 		private readonly EntityQuery _query;
 		private readonly string _path;
@@ -78,7 +84,6 @@
 					);
 					component = FromBinary(bytes);
 				}
-				AsyncUtilityInternal.Log($"Load:{_path}");
 			} catch (System.Exception e) {
 				AsyncUtilityInternal.Log(e);
 			}
@@ -86,7 +91,8 @@
 			AsyncUtilityInternal.Post(() => {
 				ECSUtilityInternal.ExecuteCommandBufferTemp(
 					commandBuffer => {
-						CreateEntity(commandBuffer, component);
+						Entity entity = CreateEntity(commandBuffer, component);
+						OnLoadCompleted(entity, commandBuffer);
 					}
 				);
 			});
@@ -100,11 +106,14 @@
 					component = _query.GetSingleton<T>();
 				});
 				
-				await File.WriteAllBytesAsync(_path, ToBinary(component));				
-				AsyncUtilityInternal.Log($"Save:{_path}");
+				await File.WriteAllBytesAsync(_path, ToBinary(component));
 			} catch (System.Exception e) {
 				AsyncUtilityInternal.Log(e);
 			}
+
+			AsyncUtilityInternal.Post(() => {
+				OnSaveCompleted();
+			});
 		}
 
 		private Entity CreateEntity(EntityCommandBuffer commandBuffer, T component) {
