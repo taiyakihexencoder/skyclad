@@ -11,9 +11,30 @@
 	/// </summary>
 	/// <typeparam name="T"></typeparam>
 	public abstract class SingleDataLoader<T> where T : unmanaged, IComponentData {
+		/// <summary>
+		/// ファイルが読み込めなかった場合のデフォルト
+		/// </summary>
 		protected abstract T Default { get; }
+
+		/// <summary>
+		/// バイナリからの変換
+		/// </summary>
+		/// <param name="data"></param>
+		/// <returns></returns>
 		protected abstract T FromBinary(byte[] data);
+
+		/// <summary>
+		/// バイナリに変換
+		/// </summary>
+		/// <param name="component"></param>
+		/// <returns></returns>
 		protected abstract byte[] ToBinary(T component);
+
+		/// <summary>
+		/// 破棄される時の処理(Blobの解放など)
+		/// </summary>
+		/// <param name="component"></param>
+		protected virtual void OnDispose(T component) { }
 
 		private readonly EntityQuery _query;
 		private readonly string _path;
@@ -32,20 +53,29 @@
 			}
 		}
 
+		/// <summary>
+		/// バックグラウンドで読込を実行
+		/// </summary>
 		public void Load() {
 			_ = Task.Run(LoadInternal);
 		}
 
+		/// <summary>
+		/// バックグラウンドで書込を実行
+		/// </summary>
 		public void Save() {
 			_ = Task.Run(SaveInternal);
 		}
 
 		private async Task LoadInternal() {
-			T component = Default;
+			T component = AsyncUtilityInternal.Send(() => Default);
 
 			try {
 				if (File.Exists(_path)) {
 					byte[] bytes = await File.ReadAllBytesAsync(_path);
+					AsyncUtilityInternal.Send(
+						() => OnDispose(component)
+					);
 					component = FromBinary(bytes);
 				}
 				AsyncUtilityInternal.Log($"Load:{_path}");
@@ -63,15 +93,14 @@
 		}
 
 		private async Task SaveInternal() {
-			T component = Default;
-
+			T component = AsyncUtilityInternal.Send(() => Default);
 			try {
 				AsyncUtilityInternal.Send(() => {
+					OnDispose(component);
 					component = _query.GetSingleton<T>();
 				});
 				
-				await File.WriteAllBytesAsync(_path, ToBinary(component));
-				
+				await File.WriteAllBytesAsync(_path, ToBinary(component));				
 				AsyncUtilityInternal.Log($"Save:{_path}");
 			} catch (System.Exception e) {
 				AsyncUtilityInternal.Log(e);
@@ -89,8 +118,17 @@
 			return !_query.IsEmpty;
 		}
 
+		/// <summary>
+		/// データエンティティを削除
+		/// </summary>
 		public void Unload() {
 			if (!_query.IsEmpty) {
+				NativeArray<T> data = _query.ToComponentDataArray<T>(Allocator.Temp);
+				for (int i = 0; i < data.Length; ++i) {
+					OnDispose(data[i]);
+				}
+				data.Dispose();
+
 				ECSUtilityInternal.ExecuteCommandBufferTemp(
 					commandBuffer => commandBuffer.DestroyEntity(_query, EntityQueryCaptureMode.AtPlayback)
 				);
