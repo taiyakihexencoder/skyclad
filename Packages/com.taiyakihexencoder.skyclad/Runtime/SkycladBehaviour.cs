@@ -86,7 +86,9 @@ namespace skyclad {
 				}
 			);
 
-			userData.UserDataLoader.Unload();
+			_ = Task.Run(async () => {
+				await userData.UserDataLoader.Unload();
+			});
 		}
 	}
 }

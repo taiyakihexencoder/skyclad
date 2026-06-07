@@ -1,6 +1,9 @@
 ﻿using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+using Unity.Collections;
+using Unity.Entities;
 using UnityEngine;
 
 namespace skyclad.internalProc {
@@ -34,6 +37,87 @@ namespace skyclad.internalProc {
 					// directory not found
 					return new List<int>();
 				}
+			}
+
+			public static async Task Load(
+				int slot,
+				System.Action<byte[]> action
+			) {
+				string absPath = AsyncUtilityInternal.Send( () => GetPath(slot) );
+				try {
+					if (File.Exists(absPath)) {
+						byte[] bytes = await File.ReadAllBytesAsync(absPath);
+						AsyncUtilityInternal.Send(() => action(bytes));
+						AsyncUtilityInternal.Log($"Load:{absPath}");
+					}
+				} catch (System.Exception e) {
+					AsyncUtilityInternal.LogError(e);
+				}
+			}
+
+			public static async Task Save(
+				int slot,
+				byte[] source
+			) {
+				string absPath = AsyncUtilityInternal.Send( () => GetPath(slot) );
+				try {
+					await File.WriteAllBytesAsync(absPath, source);
+					AsyncUtilityInternal.Log($"Save:{absPath}");
+				} catch (System.Exception e) {
+					AsyncUtilityInternal.LogError(e);
+				}
+			}
+
+			public static async Task Unload(Entity entity) {
+				AsyncUtilityInternal.Send(() => {
+					ECSUtilityInternal.ExecuteCommandBufferTemp(
+						commandBuffer => {
+							commandBuffer.DestroyEntity(entity);
+						}
+					);
+				});
+
+				EntityManager entityManager = AsyncUtilityInternal.Send(() => ECSUtilityInternal.EntityManager);
+				bool exists = true;
+				while(exists) {
+					exists = AsyncUtilityInternal.Send( () => entityManager.Exists(entity) );
+					await Task.Yield();
+				}
+			}
+
+			private static string GetPath(int slot) {
+				string basePath = $"{Application.persistentDataPath}{Path.DirectorySeparatorChar}{USER_DATA_PATH}";
+				if (!Directory.Exists(basePath)) {
+					Directory.CreateDirectory(basePath);
+				}
+				return $"{basePath}{Path.DirectorySeparatorChar}{string.Format(USER_DATA_FILE_NAME, slot)}";
+			}
+
+			public static void CreateLoadRequest(EntityCommandBuffer commandBuffer, int slot) {
+				Entity entity = commandBuffer.CreateEntity();
+				commandBuffer.SetDebugName(entity, "Load User Data Request");
+				commandBuffer.AddComponent(
+					entity,
+					new InternalRequestLoadUserDataComponent { slot = slot, }
+				);
+			}
+
+			public static void CreateSaveRequest(EntityCommandBuffer commandBuffer, int slot) {
+				Entity entity = commandBuffer.CreateEntity();
+				commandBuffer.SetDebugName(entity, "Save User Data Request");
+				commandBuffer.AddComponent(
+					entity,
+					new InternalRequestSaveUserDataComponent { slot = slot, }
+				);
+			}
+
+			public static void CreateUnloadRequest(EntityCommandBuffer commandBuffer) {
+				Entity entity = commandBuffer.CreateEntity();
+				commandBuffer.SetDebugName(entity, "Unload User Data Request");
+				commandBuffer.AddComponent(
+					entity,
+					new InternalRequestUnloadUserDataComponent { }
+				);
 			}
 		}
 
