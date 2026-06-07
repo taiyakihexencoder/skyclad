@@ -80,9 +80,11 @@
 				if (File.Exists(_path)) {
 					byte[] bytes = await File.ReadAllBytesAsync(_path);
 					AsyncUtilityInternal.Send(
-						() => OnDispose(component)
+						() => {
+							OnDispose(component);
+							component = FromBinary(bytes);
+						}
 					);
-					component = FromBinary(bytes);
 				}
 			} catch (System.Exception e) {
 				AsyncUtilityInternal.Log(e);
@@ -101,14 +103,20 @@
 		private async Task SaveInternal() {
 			T component = AsyncUtilityInternal.Send(() => Default);
 			try {
+				byte[] bytes = null;
 				AsyncUtilityInternal.Send(() => {
 					OnDispose(component);
 					component = _query.GetSingleton<T>();
+					bytes = ToBinary(component);
 				});
-				
-				await File.WriteAllBytesAsync(_path, ToBinary(component));
+
+				if (bytes == null) {
+					AsyncUtilityInternal.Log("Failed Save.");
+				} else {
+					await File.WriteAllBytesAsync(_path, bytes);
+				}
 			} catch (System.Exception e) {
-				AsyncUtilityInternal.Log(e);
+				AsyncUtilityInternal.LogError(e);
 			}
 
 			AsyncUtilityInternal.Post(() => {
