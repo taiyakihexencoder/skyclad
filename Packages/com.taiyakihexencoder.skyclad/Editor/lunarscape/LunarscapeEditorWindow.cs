@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace skyclad.lunarscape.editor {
-	public sealed class LunarscapeEditorWindow : EditorWindow {
+	internal sealed class LunarscapeEditorWindow : EditorWindow {
 		private const float MENU_WIDTH = 120f;
 
 		[SerializeField]
@@ -12,6 +12,7 @@ namespace skyclad.lunarscape.editor {
 		private enum Tabs {
 			None,
 			General,
+			Field,
 		}
 
 		[MenuItem("Skyclad/Lunarscape")]
@@ -86,6 +87,9 @@ namespace skyclad.lunarscape.editor {
 			switch(_current) {
 				case Tabs.General: {
 					return new LunarscapeEditorGeneralTab();
+				}
+				case Tabs.Field: {
+					return new LunarscapeEditorFieldTab();
 				}
 				default: {
 					return new VisualElement();

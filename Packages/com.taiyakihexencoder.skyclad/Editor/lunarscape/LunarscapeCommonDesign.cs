@@ -1,13 +1,13 @@
-﻿using System;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace skyclad.lunarscape.editor {
-	public static class LunarscapeCommonDesign {
+	internal static class LunarscapeCommonDesign {
 		public static VisualElement Title(string text) {
 			Label label = new Label(text);
 			label.style.fontSize = 20f;
 			label.style.unityFontStyleAndWeight = FontStyle.Bold;
+			label.style.paddingBottom = 12f;
 			return label;
 		}
 
@@ -17,6 +17,7 @@ namespace skyclad.lunarscape.editor {
 			mainFrame.style.paddingRight = 16f;
 			mainFrame.style.paddingTop = 12f;
 			mainFrame.style.paddingBottom = 12f;
+			mainFrame.style.flexDirection = FlexDirection.Column;
 			return mainFrame;
 		}
 	}
