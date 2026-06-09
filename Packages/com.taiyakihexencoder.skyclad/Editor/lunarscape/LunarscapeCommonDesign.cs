@@ -11,8 +11,16 @@ namespace skyclad.lunarscape.editor {
 			return label;
 		}
 
+		public static VisualElement Header(string text) {
+			Label label = new Label(text);
+			label.style.fontSize = 16f;
+			label.style.unityFontStyleAndWeight = FontStyle.Bold;
+			label.style.paddingBottom = 8f;
+			return label;
+		}
+
 		public static VisualElement MainFrame() {
-			VisualElement mainFrame = new VisualElement();
+			ScrollView mainFrame = new ScrollView(ScrollViewMode.Vertical);
 			mainFrame.style.paddingLeft = 16f;
 			mainFrame.style.paddingRight = 16f;
 			mainFrame.style.paddingTop = 12f;

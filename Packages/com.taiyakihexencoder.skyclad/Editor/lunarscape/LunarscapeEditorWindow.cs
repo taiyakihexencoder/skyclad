@@ -13,6 +13,7 @@ namespace skyclad.lunarscape.editor {
 			None,
 			General,
 			Field,
+			Layer,
 		}
 
 		[MenuItem("Skyclad/Lunarscape")]
@@ -85,15 +86,10 @@ namespace skyclad.lunarscape.editor {
 
 		private VisualElement CreateContentView() {
 			switch(_current) {
-				case Tabs.General: {
-					return new LunarscapeEditorGeneralTab();
-				}
-				case Tabs.Field: {
-					return new LunarscapeEditorFieldTab();
-				}
-				default: {
-					return new VisualElement();
-				}
+				case Tabs.General: { return new LunarscapeEditorGeneralTab(); }
+				case Tabs.Field: { return new LunarscapeEditorFieldTab(); }
+				case Tabs.Layer: { return new LunarscapeEditorLayerTab(); }
+				default: { return new VisualElement(); }
 			}
 		}
 	}
