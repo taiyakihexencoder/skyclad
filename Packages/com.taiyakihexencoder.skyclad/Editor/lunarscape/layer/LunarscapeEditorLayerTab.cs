@@ -10,6 +10,8 @@ namespace skyclad.lunarscape.editor {
 		}
 
 		private void CreateLayout() {
+			int definedLength = System.Enum.GetValues(typeof(DefinedLayerName)).Length;
+
 			LunarscapeEditorSettings._Layer settings = LunarscapeEditorSettings.of.Layer;
 
 			VisualElement mainFrame = LunarscapeCommonDesign.MainFrame();
@@ -65,7 +67,7 @@ namespace skyclad.lunarscape.editor {
 				VisualElement row = new VisualElement();
 				row.style.flexDirection = FlexDirection.Row;
 				TextField nameField = new TextField();
-				nameField.enabledSelf = leftIndex >= 2;
+				nameField.enabledSelf = leftIndex >= definedLength;
 				nameField.style.fontSize = 10f;
 				nameField.style.width = 100f;
 				nameField.style.height = 14f;
@@ -93,7 +95,7 @@ namespace skyclad.lunarscape.editor {
 					int rightOffset = rightIndex * 32;
 					Toggle toggle = new Toggle();
 					toggle.style.flexGrow = 0f;
-					toggle.enabledSelf = leftIndex >= 2 && rightIndex >= 2 && 
+					toggle.enabledSelf = leftIndex >= definedLength && rightIndex >= definedLength && 
 						!string.IsNullOrEmpty(settings.Names[leftIndex]) &&
 						!string.IsNullOrEmpty(settings.Names[rightIndex]);
 					toggle.style.marginLeft = 0f;

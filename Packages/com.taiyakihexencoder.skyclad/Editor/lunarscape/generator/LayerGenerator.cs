@@ -6,14 +6,17 @@ namespace skyclad.lunarscape.editor {
 	public sealed class LayerScriptGenerator : ScriptGenerator {
 		public bool Validation(out string message) {
 			LunarscapeEditorSettings._Layer settings = LunarscapeEditorSettings.of.Layer;
+			int definedLength = System.Enum.GetValues(typeof(DefinedLayerName)).Length;
 
 			StringBuilder sb = new StringBuilder();
-			List<string> validated = new List<string>();
+			List<string> validated = new List<string>(System.Enum.GetNames(typeof(DefinedLayerName)));
 			Regex regex = new Regex(@"^[a-zA-Z_]+[a-zA-Z0-9_]*$");
 			bool result = true;
 			for (int i = 0; i < 32; ++i) {
 				int idx = settings.IndexTable[i];
-				if (string.IsNullOrEmpty(settings.Names[idx])) {
+				if (idx < definedLength) {
+					// 定義済のレイヤー
+				} else if (string.IsNullOrEmpty(settings.Names[idx])) {
 					// 対象外
 				} else if (validated.Contains(settings.Names[idx])) {
 					// 名前の重複
@@ -33,6 +36,7 @@ namespace skyclad.lunarscape.editor {
 
 		protected override void WriteScript() {
 			LunarscapeEditorSettings._Layer settings = LunarscapeEditorSettings.of.Layer;
+			int definedLength = System.Enum.GetValues(typeof(DefinedLayerName)).Length;
 
 			using (Namespace("skyclad.lunarscape")) {
 				using (Class("SceneLayer", isPartial: true)) {
@@ -40,7 +44,7 @@ namespace skyclad.lunarscape.editor {
 						int idx = settings.IndexTable[i];
 
 						// 0と1は固定レイヤー
-						if (idx < 2) { continue; }
+						if (idx < definedLength) { continue; }
 						if (string.IsNullOrEmpty(settings.Names[idx])) { continue; }
 
 						uint value = 1u << i;
@@ -53,7 +57,7 @@ namespace skyclad.lunarscape.editor {
 					for (int i = 0; i < 32; ++i) {
 						int idx = settings.IndexTable[i];
 
-						if (idx < 2) { continue; }
+						if (idx < definedLength) { continue; }
 						if (string.IsNullOrEmpty(settings.Names[idx])) { continue; }
 
 						int leftOffset = idx * 32;
