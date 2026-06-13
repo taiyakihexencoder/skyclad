@@ -27,6 +27,15 @@ namespace skyclad.editor {
 			style.minWidth = 0f;
 			style.minHeight = 0f;
 		}
+
+		public Row HorizontalArrangement(Justify arrangement) {
+			style.justifyContent = arrangement;
+			return this;
+		}
+
+		public Row VerticalAlignment(Align align) {
+			return Align(align);
+		}
 	}
 
 	public class Column : CommonVisualElement<Column> {
@@ -39,6 +48,16 @@ namespace skyclad.editor {
 			style.minWidth = 0f;
 			style.minHeight = 0f;
 		}
+
+		public Column VerticalArrangement(Justify arrangement) {
+			style.justifyContent = arrangement;
+			return this;
+		}
+
+		public Column HorizontalAlignment(Align align) {
+			return Align(align);
+		}
+
 	}
 
 	public abstract class CommonVisualElement<T> : VisualElement where T : CommonVisualElement<T> {

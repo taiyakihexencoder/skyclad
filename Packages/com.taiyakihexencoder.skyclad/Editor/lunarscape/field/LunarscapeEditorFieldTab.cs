@@ -32,6 +32,15 @@ namespace skyclad.lunarscape.editor {
 			});
 			mainFrame.Add(fieldEditTypeField);
 
+			switch(LunarscapeEditorSettings.of.Field.FieldEditorMode) {
+				case FieldEditorMode.SideView: {
+					mainFrame.Add(SideViewSettingsView(settings, mainFrame));
+					break;
+				}
+			}
+
+			mainFrame.Add(new Spacer(height: 20f));
+
 			// フィールドを生成する距離
 			FloatField loadDistanceField = new FloatField("Load Field Distance");
 			loadDistanceField.SetValueWithoutNotify(runtime.Field.LoadFieldDistance);
@@ -62,12 +71,6 @@ namespace skyclad.lunarscape.editor {
 			});
 			mainFrame.Add(cacheMeshSizeField);
 
-			switch(LunarscapeEditorSettings.of.Field.FieldEditorMode) {
-				case FieldEditorMode.SideView: {
-					mainFrame.Add(SideViewSettingsView(settings, mainFrame));
-					break;
-				}
-			}
 			mainFrame.Add(new Spacer(height: 20f));
 			mainFrame.Add(FieldAssetListView(LunarscapeEditorSettings.of.Field.FieldEditorMode));
 
@@ -75,26 +78,39 @@ namespace skyclad.lunarscape.editor {
 		}
 
 		private VisualElement SideViewSettingsView(LunarscapeEditorSettings settings, VisualElement mainFrame) {
-			VisualElement pane = new VisualElement();
-			pane.style.flexDirection = FlexDirection.Row;
+			Row pane = new Row()
+				.VerticalAlignment(Align.Center);
 
-			FloatField widthField = new FloatField("Width");
+			Label widthLabel = new Label("Width");
+			widthLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
+
+			FloatField widthField = new FloatField();
 			widthField.SetValueWithoutNotify(settings.Field.SideView.Width);
 			widthField.RegisterValueChangedCallback(v => {
 				LunarscapeEditorSettings.of.Field.SideView.Width = v.newValue;
 				LunarscapeEditorSettings.Save();
 			});
-			widthField.style.flexGrow = 1f;
-			pane.Add(widthField);
+			widthField.style.width = 100f;
 
-			FloatField zOffsetField = new FloatField("Z Offset");
+			Label zOffsetLabel = new Label("Z Offset");
+			zOffsetLabel.style.unityTextAlign = TextAnchor.MiddleCenter;
+
+			FloatField zOffsetField = new FloatField();
 			zOffsetField.SetValueWithoutNotify(settings.Field.SideView.ZOffset);
 			zOffsetField.RegisterValueChangedCallback(v => {
 				LunarscapeEditorSettings.of.Field.SideView.ZOffset = v.newValue;
 				LunarscapeEditorSettings.Save();
 			});
-			zOffsetField.style.flexGrow = 1f;
-			pane.Add(zOffsetField);
+			zOffsetField.style.width = 100f;
+
+			pane.AddChildren(
+				new Spacer(width:20f),
+				widthLabel, 
+				widthField, 
+				new Spacer(width:20f),
+				zOffsetLabel, 
+				zOffsetField
+			);
 
 			return pane;
 		}
