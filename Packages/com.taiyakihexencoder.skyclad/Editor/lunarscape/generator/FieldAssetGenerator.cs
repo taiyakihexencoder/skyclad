@@ -91,9 +91,10 @@ namespace skyclad.lunarscape.editor {
 				for(int i = 0, iMax = asset.MeshCount; i < iMax; ++i) {
 					if (asset.TryGetMesh(i, out Vector3[] vertices, out int[] indices)) {
 						foreach(Vector3 v in vertices) {
-							if (v.x < regionMin.x) { regionMin.x = v.x; } else if (v.x > regionMax.x) { regionMax.x = v.x; }
-							if (v.y < regionMin.y) { regionMin.y = v.y; } else if (v.y > regionMax.y) { regionMax.y = v.y; }
-							if (v.z < regionMin.z) { regionMin.z = v.z; } else if (v.z > regionMax.z) { regionMax.z = v.z; }
+							Vector3 pos = asset.Rotation * v;
+							if (pos.x < regionMin.x) { regionMin.x = pos.x; } else if (pos.x > regionMax.x) { regionMax.x = pos.x; }
+							if (pos.y < regionMin.y) { regionMin.y = pos.y; } else if (pos.y > regionMax.y) { regionMax.y = pos.y; }
+							if (pos.z < regionMin.z) { regionMin.z = pos.z; } else if (pos.z > regionMax.z) { regionMax.z = pos.z; }
 						}
 
 						if (vertices.Length >= 2) {
@@ -125,8 +126,8 @@ namespace skyclad.lunarscape.editor {
 					p.FindPropertyRelative("name").stringValue = asset.name;
 					p.FindPropertyRelative("position").vector3Value = asset.Position;
 					p.FindPropertyRelative("rotation").quaternionValue = asset.Rotation;
-					p.FindPropertyRelative("boundsMin").vector3Value = regionMin;
-					p.FindPropertyRelative("boundsMax").vector3Value = regionMax;
+					p.FindPropertyRelative("boundsMin").vector3Value = regionMin + asset.Position;
+					p.FindPropertyRelative("boundsMax").vector3Value = regionMax + asset.Position;
 				});
 				mainAssetObj.ApplyModifiedProperties();
 			}

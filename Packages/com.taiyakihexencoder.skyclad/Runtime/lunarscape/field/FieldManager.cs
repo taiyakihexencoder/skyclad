@@ -11,7 +11,6 @@ namespace skyclad.lunarscape {
 	public static class FieldManager {
 		private static FieldMeshAssetLoader _loader;
 		private static EntityArchetype _singletonArchetype;
-		private static EntityArchetype _observePointArchetype;
 
 		internal static void CreateInstance() {
 			_loader = new FieldMeshAssetLoader(
@@ -25,14 +24,6 @@ namespace skyclad.lunarscape {
 			EntityManager entityManager = ECSUtilityInternal.EntityManager;
 			_singletonArchetype = entityManager.CreateArchetype(
 				ComponentType.ReadWrite<SingletonLunarscapeField>(),
-				ComponentType.ReadWrite<LunarscapeParentingRequest>(),
-				ComponentType.ReadWrite<Parent>(),
-				ComponentType.ReadWrite<LocalTransform>(),
-				ComponentType.ReadWrite<LocalToWorld>()
-			);
-
-			_observePointArchetype = entityManager.CreateArchetype(
-				ComponentType.ReadWrite<LunarscapeFieldObservePoint>(),
 				ComponentType.ReadWrite<LunarscapeParentingRequest>(),
 				ComponentType.ReadWrite<Parent>(),
 				ComponentType.ReadWrite<LocalTransform>(),
@@ -55,24 +46,6 @@ namespace skyclad.lunarscape {
 						commandBuffer.SetComponent(entity, LocalTransform.FromPosition(float3.zero));
 						commandBuffer.SetComponent(entity, new LocalToWorld{ Value = float4x4.identity});
 						commandBuffer.SetDebugName(entity, "Field Singleton");
-					});
-				}
-			);
-			await Task.Yield();
-		}
-
-		internal static async Task CreateObservePoint(int index, float3 point) {
-			AsyncUtilityInternal.Post(
-				() => {
-					ECSUtilityInternal.ExecuteCommandBufferTemp(commandBuffer => {
-						Entity entity = commandBuffer.CreateEntity(_observePointArchetype);
-						commandBuffer.SetComponent(entity, LocalTransform.FromPosition(float3.zero));
-						commandBuffer.SetComponent(entity, new LocalToWorld{ Value = float4x4.identity, } );
-						commandBuffer.SetComponent(entity, new LunarscapeFieldObservePoint{ 
-							index = index,
-							position = point,
-						});
-						commandBuffer.SetDebugName(entity, $"Field Observe Point{index.ToString("00")}");
 					});
 				}
 			);

@@ -1,5 +1,7 @@
 ﻿using Unity.Collections;
 using Unity.Entities;
+using Unity.Mathematics;
+using Unity.Transforms;
 
 namespace skyclad.lunarscape.internalProc {
 	[UpdateInGroup(typeof(LunarscapeSimulationFieldSystemGroup))]
@@ -15,14 +17,14 @@ namespace skyclad.lunarscape.internalProc {
 			state.RequireForUpdate(_query);
 
 			_pointQuery = new EntityQueryBuilder(Allocator.Temp)
-				.WithAll<LunarscapeFieldObservePoint>()
+				.WithAll<LunarscapeFieldObservePoint, LocalToWorld>()
 				.Build(ref state);
 			state.RequireForUpdate(_pointQuery);
 		}
 
 		void ISystem.OnUpdate(ref SystemState state) {
 			if (SystemAPI.TryGetSingleton(out SingletonLunarscapeField singleton)) {
-				NativeArray<LunarscapeFieldObservePoint> points = _pointQuery.ToComponentDataArray<LunarscapeFieldObservePoint>(Allocator.TempJob);
+				NativeArray<LocalToWorld> points = _pointQuery.ToComponentDataArray<LocalToWorld>(Allocator.TempJob);
 
 				state.Dependency = new UpdateJob {
 					distanceToLoad = singleton.loadFieldDistance,
@@ -42,19 +44,20 @@ namespace skyclad.lunarscape.internalProc {
 		partial struct UpdateJob : IJobEntity {
 			[ReadOnly] public float distanceToLoad;
 			[ReadOnly] public float distanceToUnload;
-			[ReadOnly] public NativeArray<LunarscapeFieldObservePoint> points;
+			[ReadOnly] public NativeArray<LocalToWorld> points;
 			public EntityCommandBuffer.ParallelWriter commandBuffer;
 
 			void Execute([EntityIndexInQuery] int sortKey, in Entity entity, RefRW<LunarscapeFieldComponent> field, ref DynamicBuffer<LinkedEntityGroup> children) {
 				float distanceToLoadSq = distanceToLoad * distanceToLoad;
-				foreach (LunarscapeFieldObservePoint point in points) {
+				foreach (LocalToWorld point in points) {
+					float3 pos = point.Position;
 					if (field.ValueRO.active) {
-						if (point.position.x < field.ValueRO.boundsMin.x - distanceToUnload ||
-							point.position.y < field.ValueRO.boundsMin.y - distanceToUnload ||
-							point.position.z < field.ValueRO.boundsMin.z - distanceToUnload ||
-							field.ValueRO.boundsMin.x + distanceToUnload < point.position.x ||
-							field.ValueRO.boundsMin.y + distanceToUnload < point.position.y ||
-							field.ValueRO.boundsMin.z + distanceToUnload < point.position.z
+						if (pos.x < field.ValueRO.boundsMin.x - distanceToUnload ||
+							pos.y < field.ValueRO.boundsMin.y - distanceToUnload ||
+							pos.z < field.ValueRO.boundsMin.z - distanceToUnload ||
+							field.ValueRO.boundsMin.x + distanceToUnload < pos.x ||
+							field.ValueRO.boundsMin.y + distanceToUnload < pos.y ||
+							field.ValueRO.boundsMin.z + distanceToUnload < pos.z
 						) {
 							field.ValueRW.active = false;
 
@@ -64,12 +67,12 @@ namespace skyclad.lunarscape.internalProc {
 							}
 						}
 					} else {
-						if (field.ValueRO.boundsMin.x - distanceToLoad <= point.position.x &&
-							field.ValueRO.boundsMin.y - distanceToLoad <= point.position.y &&
-							field.ValueRO.boundsMin.z - distanceToLoad <= point.position.z &&
-							point.position.x <= field.ValueRO.boundsMin.x + distanceToLoad &&
-							point.position.y <= field.ValueRO.boundsMin.y + distanceToLoad &&
-							point.position.z <= field.ValueRO.boundsMin.z + distanceToLoad
+						if (field.ValueRO.boundsMin.x - distanceToLoad <= pos.x &&
+							field.ValueRO.boundsMin.y - distanceToLoad <= pos.y &&
+							field.ValueRO.boundsMin.z - distanceToLoad <= pos.z &&
+							pos.x <= field.ValueRO.boundsMin.x + distanceToLoad &&
+							pos.y <= field.ValueRO.boundsMin.y + distanceToLoad &&
+							pos.z <= field.ValueRO.boundsMin.z + distanceToLoad
 						) {
 							field.ValueRW.active = true;
 
@@ -84,39 +87,6 @@ namespace skyclad.lunarscape.internalProc {
 									id = field.ValueRO.id,
 								}
 							);
-						}
-					}
-
-					if (!field.ValueRO.active &&
-						field.ValueRO.boundsMin.x - distanceToLoad <= point.position.x &&
-						field.ValueRO.boundsMin.y - distanceToLoad <= point.position.y &&
-						field.ValueRO.boundsMin.z - distanceToLoad <= point.position.z &&
-						point.position.x <= field.ValueRO.boundsMin.x + distanceToLoad &&
-						point.position.y <= field.ValueRO.boundsMin.y + distanceToLoad &&
-						point.position.z <= field.ValueRO.boundsMin.z + distanceToLoad
-					) {
-						// Mesh Entityを作成
-						// ロードを含むのでLunarscapeFieldBehaviourで生成
-						Entity requestEntity = commandBuffer.CreateEntity(sortKey);
-						commandBuffer.AddComponent(
-							sortKey, 
-							requestEntity, 
-							new LunarscapeFieldCreateRequest {
-								entity = entity,
-								id = field.ValueRO.id,
-							}
-						);
-					} else if (
-						point.position.x < field.ValueRO.boundsMin.x - distanceToUnload ||
-						point.position.y < field.ValueRO.boundsMin.y - distanceToUnload ||
-						point.position.z < field.ValueRO.boundsMin.z - distanceToUnload ||
-						field.ValueRO.boundsMin.x + distanceToUnload < point.position.x ||
-						field.ValueRO.boundsMin.y + distanceToUnload < point.position.y ||
-						field.ValueRO.boundsMin.z + distanceToUnload < point.position.z
-					) {
-						// Mesh Entityを削除
-						foreach(LinkedEntityGroup child in children) {
-							commandBuffer.DestroyEntity(sortKey, child.Value);
 						}
 					}
 				}

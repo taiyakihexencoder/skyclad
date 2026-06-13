@@ -13,8 +13,8 @@ namespace skyclad.lunarscape {
 	internal class Lunarscaper : MonoBehaviour {
 		private static Lunarscaper _instance = null;
 
-		private EntityQuery enterQuery;
-		private EntityQuery exitQuery;
+		private EntityQuery _enterQuery;
+		private EntityArchetype _playerArchetype;
 
 		[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
 		private static void CreateInstance() {
@@ -24,30 +24,49 @@ namespace skyclad.lunarscape {
 
 				// （仮）デバッグ用の開始処理
 				ECSUtilityInternal.ExecuteCommandBufferTemp(commandBuffer => {
-					Enter(commandBuffer, new float3(1f,4f,1f));
+					Enter(
+						commandBuffer, 
+						new LunarscapeEntry {
+							entryName = "Player",
+							position = new float3(0f, 60f, 0f),
+							rotation = quaternion.identity,
+						}
+					);
 				});
 			}
 		}
 
 		public static void Enter(
 			EntityCommandBuffer commandBuffer,
-			float3 position
+			LunarscapeEntry entry
 		) {
 			Entity entity = commandBuffer.CreateEntity();
 			commandBuffer.AddComponent<LunarscapeEnterRequest>(entity);
-			DynamicBuffer<LunarscapeEntryPoint> entryPoint = commandBuffer.AddBuffer<LunarscapeEntryPoint>(entity);
-			entryPoint.Add(new LunarscapeEntryPoint{ position = position, });
+			DynamicBuffer<LunarscapeEntrySetting> entryPoint = commandBuffer.AddBuffer<LunarscapeEntrySetting>(entity);
+			entryPoint.Add(
+				new LunarscapeEntrySetting { 
+					entryName = entry.entryName,
+					position = entry.position, 
+					rotation = entry.rotation,
+				}
+			);
 		}
 
 		public static void Enter(
 			EntityCommandBuffer commandBuffer,
-			NativeArray<float3> positions
+			DynamicBuffer<LunarscapeEntry> entries
 		) {
 			Entity entity = commandBuffer.CreateEntity();
 			commandBuffer.AddComponent<LunarscapeEnterRequest>(entity);
-			DynamicBuffer<LunarscapeEntryPoint> entryPoint = commandBuffer.AddBuffer<LunarscapeEntryPoint>(entity);
-			foreach (float3 position in positions) {
-				entryPoint.Add(new LunarscapeEntryPoint{ position = position, });
+			DynamicBuffer<LunarscapeEntrySetting> entryPoint = commandBuffer.AddBuffer<LunarscapeEntrySetting>(entity);
+			foreach (LunarscapeEntry entry in entries) {
+				entryPoint.Add(
+					new LunarscapeEntrySetting {
+						entryName = entry.entryName,
+						position = entry.position,
+						rotation = entry.rotation,
+					}
+				);
 			}
 		}
 
@@ -62,44 +81,48 @@ namespace skyclad.lunarscape {
 			LunarscapeFieldBehaviour field = LunarscapeFieldBehaviour.CreateInstance();
 			field.transform.SetParent(transform);
 
-			enterQuery = new EntityQueryBuilder(Allocator.Temp)
+			_enterQuery = new EntityQueryBuilder(Allocator.Temp)
 				.WithAll<LunarscapeEnterRequest>()
 				.Build(ECSUtilityInternal.EntityManager);
-			exitQuery = new EntityQueryBuilder(Allocator.Temp)
-				.WithAll<LunarscapeExitRequest>()
-				.Build(ECSUtilityInternal.EntityManager);
+			_playerArchetype = ECSUtilityInternal.EntityManager.CreateArchetype(
+				ComponentType.ReadOnly<LunarscapeFieldObservePoint>(),
+				ComponentType.ReadOnly<LunarscapeParentingRequest>(),
+				ComponentType.ReadWrite<LocalTransform>(),
+				ComponentType.ReadWrite<LocalToWorld>(),
+				ComponentType.ReadWrite<Parent>()
+			);
 		}
 
 		private void Update() {
-			if (!enterQuery.IsEmpty) { 
+			if (!_enterQuery.IsEmpty) { 
 				EnterLunarscape();
 			}
 		}
 
 		private void EnterLunarscape() {
-			NativeArray<Entity> entities = enterQuery.ToEntityArray(Allocator.Temp);
+			NativeArray<Entity> entities = _enterQuery.ToEntityArray(Allocator.Temp);
 
 			// Entry Pointの抽出
-			DynamicBuffer<LunarscapeEntryPoint> entryPointBuffer = ECSUtilityInternal.EntityManager.GetBuffer<LunarscapeEntryPoint>(entities[0]);
-			float3[] entryPoint = new float3[entryPointBuffer.Length];
-			for(int i = 0; i < entryPoint.Length; ++i) {
-				entryPoint[i] = entryPointBuffer[i].position;
+			DynamicBuffer<LunarscapeEntrySetting> entryPointBuffer = ECSUtilityInternal.EntityManager.GetBuffer<LunarscapeEntrySetting>(entities[0]);
+			LunarscapeEntrySetting[] entries = new LunarscapeEntrySetting[entryPointBuffer.Length];
+			for(int i = 0; i < entries.Length; ++i) {
+				entries[i] = entryPointBuffer[i];
 			}
 
 			entities.Dispose();
 
 			// リクエストの削除
 			ECSUtilityInternal.ExecuteCommandBufferTemp(commandBuffer => {
-				commandBuffer.DestroyEntity(enterQuery, EntityQueryCaptureMode.AtPlayback);
+				commandBuffer.DestroyEntity(_enterQuery, EntityQueryCaptureMode.AtPlayback);
 			});
 
 			// 開始処理
 			_ = Task.Run(async () => {
-				await EnterLunarscapeInternal(entryPoint);
+				await EnterLunarscapeInternal(entries);
 			});
 		}
 
-		private async Task EnterLunarscapeInternal(float3[] entryPoint) {
+		private async Task EnterLunarscapeInternal(LunarscapeEntrySetting[] entries) {
 			AsyncUtilityInternal.Send(() => {
 				FieldManager.CreateInstance();
 			});
@@ -112,10 +135,14 @@ namespace skyclad.lunarscape {
 				FieldManager.CreateHeaderEntities()
 			};
 
-			for (int i = 0; i < entryPoint.Length; ++i) {
-				parallelFieldTasks.Add(FieldManager.CreateObservePoint(i, entryPoint[i]));
-			}
 			await Task.WhenAll(parallelFieldTasks);
+
+			// エントリーの作成
+			Task[] parallelEntryTasks = new Task[entries.Length];
+			for(int i = 0; i < entries.Length; ++i) {
+				parallelEntryTasks[i] = CreatePlayerEntity(entries[i]);
+			}
+			await Task.WhenAll(parallelEntryTasks);
 
 			// システムインスタンスの作成
 			AsyncUtilityInternal.Post(() => {
@@ -129,6 +156,18 @@ namespace skyclad.lunarscape {
 					commandBuffer.SetDebugName(entity, "Lunarscape Instance");
 				});
 			});
+		}
+
+		private async Task CreatePlayerEntity(LunarscapeEntrySetting entry) {
+			AsyncUtilityInternal.Post(() => {
+				ECSUtilityInternal.ExecuteCommandBufferTemp(commandBuffer => {
+					Entity entity = commandBuffer.CreateEntity(_playerArchetype);
+					commandBuffer.SetComponent(entity, LocalTransform.FromPositionRotation(entry.position, entry.rotation));
+					commandBuffer.SetComponent(entity, new LocalToWorld{ Value = float4x4.TRS(entry.position, entry.rotation, new float3(1f,1f,1f))});
+					commandBuffer.SetDebugName(entity, entry.entryName);
+				});
+			});
+			await Task.Yield();
 		}
 	}
 }
