@@ -3,6 +3,7 @@
     "rootNamespace": "",
     "references": [
         "skyclad",
+        "skyclad.internal",
         "Unity.Mathematics",
         "Unity.Addressables",
         "Unity.Addressables.Editor"

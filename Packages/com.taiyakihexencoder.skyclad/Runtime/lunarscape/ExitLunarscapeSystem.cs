@@ -1,14 +1,15 @@
-﻿using Unity.Collections;
+﻿using skyclad.lunarscape.internalProc;
+using Unity.Collections;
 using Unity.Entities;
 
-namespace skyclad.lunarscape.internalProc {
+namespace skyclad.lunarscape {
 	[UpdateInGroup(typeof(LunarscapeSimulationSystemGroup))]
-	public partial struct LunarscapeEntranceSystem : ISystem {
+	public partial struct ExitLunarscapeSystem : ISystem {
 		private EntityQuery _query;
 
 		void ISystem.OnCreate(ref SystemState state) {
 			_query = new EntityQueryBuilder(Allocator.Temp)
-				.WithAll<LunarscapeEnterRequest>()
+				.WithAll<LunarscapeExitRequest>()
 				.Build(ref state);
 
 			state.RequireForUpdate(_query);
@@ -16,19 +17,11 @@ namespace skyclad.lunarscape.internalProc {
 
 		void ISystem.OnUpdate(ref SystemState state) {
 			EntityCommandBuffer commandBuffer = CreateCommandBuffer(ref state);
-			if (! SystemAPI.TryGetSingleton(out LunarscapeInstance lunarscape)) {
-				Entity instance = commandBuffer.CreateEntity();
-				commandBuffer.AddComponent(instance, new LunarscapeInstance{ });
-
-				InitLunarscape(ref state);
-			}
-			commandBuffer.DestroyEntity(_query, EntityQueryCaptureMode.AtPlayback);
+			state.Dependency = new DeleteJob {
+				commandBuffer = commandBuffer,
+			}.Schedule(_query, state.Dependency);
 		}
 	
-		private void InitLunarscape(ref SystemState state) {
-
-		}
-
 		void ISystem.OnDestroy(ref SystemState state) {
 		}
 
@@ -37,5 +30,14 @@ namespace skyclad.lunarscape.internalProc {
 				.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>()
 				.CreateCommandBuffer(state.World.Unmanaged);
 		}
+
+		partial struct DeleteJob : IJobEntity {
+			public EntityCommandBuffer commandBuffer;
+
+			void Execute(in Entity entity) {
+				commandBuffer.DestroyEntity(entity);
+			}
+		}
 	}
+
 }

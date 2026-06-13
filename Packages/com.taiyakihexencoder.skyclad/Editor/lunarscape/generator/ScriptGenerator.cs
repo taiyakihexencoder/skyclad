@@ -30,7 +30,32 @@ namespace skyclad.lunarscape.editor {
 			if (isPartial) {
 				header += "partial ";
 			}
-			stream.AppendLine($"{header} class {name} {{");
+			stream.AppendLine($"{header}class {name} {{");
+			stream.AddIndent();
+			return new IndentScope(() => {
+				stream.RemoveIndent();
+				stream.AppendLine($"}}");
+			});
+		}
+
+		protected IndentScope Struct(
+			string name,
+			bool isPartial = false,
+			bool isStatic = false,
+			bool isReadonly = false
+		) {
+			string header = "";
+			header += "public ";
+			if (isStatic) {
+				header += "static ";
+			}
+			if (isReadonly) {
+				header += "readonly ";
+			}
+			if (isPartial) {
+				header += "partial ";
+			}
+			stream.AppendLine($"{header}struct {name} {{");
 			stream.AddIndent();
 			return new IndentScope(() => {
 				stream.RemoveIndent();
