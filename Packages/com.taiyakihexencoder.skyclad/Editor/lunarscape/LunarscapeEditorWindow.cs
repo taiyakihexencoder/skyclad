@@ -12,6 +12,7 @@ namespace skyclad.lunarscape.editor {
 		private enum Tabs {
 			None,
 			General,
+			Avatar,
 			Field,
 			Layer,
 		}
@@ -87,6 +88,7 @@ namespace skyclad.lunarscape.editor {
 		private VisualElement CreateContentView() {
 			switch(_current) {
 				case Tabs.General: { return new LunarscapeEditorGeneralTab(); }
+				case Tabs.Avatar: { return new LunarscapeEditorAvatarTab(); }
 				case Tabs.Field: { return new LunarscapeEditorFieldTab(); }
 				case Tabs.Layer: { return new LunarscapeEditorLayerTab(); }
 				default: { return new VisualElement(); }

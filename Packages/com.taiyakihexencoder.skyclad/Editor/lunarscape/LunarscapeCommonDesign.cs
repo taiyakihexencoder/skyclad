@@ -3,7 +3,7 @@ using UnityEngine.UIElements;
 
 namespace skyclad.lunarscape.editor {
 	internal static class LunarscapeCommonDesign {
-		public static VisualElement Title(string text) {
+		internal static VisualElement Title(string text) {
 			Label label = new Label(text);
 			label.style.fontSize = 20f;
 			label.style.unityFontStyleAndWeight = FontStyle.Bold;
@@ -11,7 +11,7 @@ namespace skyclad.lunarscape.editor {
 			return label;
 		}
 
-		public static VisualElement Header(string text) {
+		internal static VisualElement Header(string text) {
 			Label label = new Label(text);
 			label.style.fontSize = 16f;
 			label.style.unityFontStyleAndWeight = FontStyle.Bold;
@@ -19,7 +19,7 @@ namespace skyclad.lunarscape.editor {
 			return label;
 		}
 
-		public static VisualElement MainFrame() {
+		internal static VisualElement MainFrame() {
 			ScrollView mainFrame = new ScrollView(ScrollViewMode.Vertical);
 			mainFrame.style.paddingLeft = 16f;
 			mainFrame.style.paddingRight = 16f;
@@ -27,6 +27,18 @@ namespace skyclad.lunarscape.editor {
 			mainFrame.style.paddingBottom = 12f;
 			mainFrame.style.flexDirection = FlexDirection.Column;
 			return mainFrame;
+		}
+
+		internal static Tab TabFrame(string title) {
+			Tab tab = new Tab();
+			tab.style.paddingLeft = 0f;
+			tab.style.paddingRight = 0f;
+			tab.style.paddingTop = 8f;
+			tab.style.paddingBottom = 0f;
+			tab.style.flexDirection = FlexDirection.Column;
+
+			tab.label = title;
+			return tab;
 		}
 	}
 }
