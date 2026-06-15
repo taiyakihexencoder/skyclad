@@ -2,12 +2,24 @@
 using System.Threading.Tasks;
 using UnityEngine.AddressableAssets;
 using UnityEngine.ResourceManagement.AsyncOperations;
+using UnityEngine.ResourceManagement.ResourceLocations;
 
 namespace skyclad.internalProc {
 	public static class ResourceUtilityInternal {
 		private static Dictionary<string, IResourceHolder> _resources = null;
 		static ResourceUtilityInternal() {
 			_resources = new Dictionary<string, IResourceHolder>();
+		}
+
+		public static async Task<bool> Exists(string address) {
+			AsyncOperationHandle<IList<IResourceLocation>> op = default;
+			AsyncUtilityInternal.Send(() => {
+				op = Addressables.LoadResourceLocationsAsync(address);
+			});
+			await op.Task;
+			bool exists = op.Status == AsyncOperationStatus.Succeeded && op.Result.Count > 0;
+			Addressables.Release(op);
+			return exists;
 		}
 
 		/// <summary>

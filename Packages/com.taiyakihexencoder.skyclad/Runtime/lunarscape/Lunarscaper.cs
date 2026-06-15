@@ -123,19 +123,25 @@ namespace skyclad.lunarscape {
 		}
 
 		private async Task EnterLunarscapeInternal(LunarscapeEntrySetting[] entries) {
-			AsyncUtilityInternal.Send(() => {
-				FieldManager.CreateInstance();
-			});
 
-			List<Task> parallelFieldTasks = new List<Task> {
-				// フィールドシングルトンの作成
-				FieldManager.CreateSettingsSingleton(),
+			using (new Process("Load Field")) {
+				AsyncUtilityInternal.Send(() => {
+					FieldManager.CreateInstance();
+				});
+				List<Task> parallelFieldTasks = new List<Task> {
+					// フィールドシングルトンの作成
+					FieldManager.CreateSettingsSingleton(),
 
-				// フィールドヘッダの作成
-				FieldManager.CreateHeaderEntities()
-			};
+					// フィールドヘッダの作成
+					FieldManager.CreateHeaderEntities()
+				};
 
-			await Task.WhenAll(parallelFieldTasks);
+				await Task.WhenAll(parallelFieldTasks);
+			}
+
+			using (new Process("Load Avatar")) {
+				await AvatarResourceManager.LoadTables();
+			}
 
 			// エントリーの作成
 			Task[] parallelEntryTasks = new Task[entries.Length];
