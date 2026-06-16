@@ -20,20 +20,26 @@ namespace skyclad.lunarscape.internalProc {
 		private PhysicsColliderSettings[] _colliders = new PhysicsColliderSettings[0];
 		public PhysicsColliderSettings[] Colliders => _colliders; 
 
-		public BlobAssetReference<Collider> GetAsBlob(int index) {
-			BlobAssetReference<Collider> collider = CapsuleCollider.Create(
-				new CapsuleGeometry {
-					Radius = _colliders[index].radius,
-					Vertex0 = new float3(0.0f, _colliders[index].radius, 0.0f),
-					Vertex1 = new float3(0.0f, _colliders[index].height - _colliders[index].radius, 0.0f),
-				},
-				new CollisionFilter {
-					BelongsTo = LunarscapeInternalConst.SCENE_LAYER_PHYSICS_OBJECT,
-					CollidesWith = LunarscapeInternalConst.SCENE_LAYER_COLLIDES_WITH_PHYSICS_OBJECT,
+		internal bool TryGetBlob(int id, out BlobAssetReference<Collider> blob) {
+			foreach (PhysicsColliderSettings collider in _colliders) {
+				if (collider.id == id) {
+					blob = CapsuleCollider.Create(
+						new CapsuleGeometry {
+							Radius = collider.radius,
+							Vertex0 = new float3(0.0f, collider.radius, 0.0f),
+							Vertex1 = new float3(0.0f, collider.height - collider.radius, 0.0f),
+						},
+						new CollisionFilter {
+							BelongsTo = LunarscapeInternalConst.SCENE_LAYER_PHYSICS_OBJECT,
+							CollidesWith = LunarscapeInternalConst.SCENE_LAYER_COLLIDES_WITH_PHYSICS_OBJECT,
+						}
+					);
+					blob.Value.SetCollisionResponse(CollisionResponsePolicy.CollideRaiseCollisionEvents);
+					return true;
 				}
-			);
-			collider.Value.SetCollisionResponse(CollisionResponsePolicy.CollideRaiseCollisionEvents);
-			return collider;
+			}
+			blob = BlobAssetReference<Collider>.Null;
+			return false;
 		}
 	}
 }

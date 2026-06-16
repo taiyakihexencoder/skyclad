@@ -6,4 +6,7 @@ namespace skyclad.lunarscape.internalProc {
 
 	[UpdateInGroup(typeof(LunarscapeSimulationSystemGroup))]
 	public sealed partial class LunarscapeSimulationFieldSystemGroup : ComponentSystemGroup { }
+
+	[UpdateInGroup(typeof(LunarscapeSimulationSystemGroup))]
+	public sealed partial class LunarscapeSimulationAvatarSystemGroup : ComponentSystemGroup { }
 }

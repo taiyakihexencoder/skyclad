@@ -140,6 +140,9 @@ namespace skyclad.lunarscape {
 			}
 
 			using (new Process("Load Avatar")) {
+				AsyncUtilityInternal.Send(() => {
+					AvatarResourceManager.Init();
+				});
 				await AvatarResourceManager.LoadTables();
 			}
 
