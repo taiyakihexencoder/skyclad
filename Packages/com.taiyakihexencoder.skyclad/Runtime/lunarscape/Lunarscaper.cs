@@ -123,11 +123,13 @@ namespace skyclad.lunarscape {
 		}
 
 		private async Task EnterLunarscapeInternal(LunarscapeEntrySetting[] entries) {
+			using (new Process("Setup Manager")) {
+				await LunarscapeLoadTableManager.Init();
 
-			using (new Process("Load Field")) {
 				AsyncUtilityInternal.Send(() => {
 					FieldManager.CreateInstance();
 				});
+				
 				List<Task> parallelFieldTasks = new List<Task> {
 					// フィールドシングルトンの作成
 					FieldManager.CreateSettingsSingleton(),
@@ -137,13 +139,35 @@ namespace skyclad.lunarscape {
 				};
 
 				await Task.WhenAll(parallelFieldTasks);
-			}
 
-			using (new Process("Load Avatar")) {
 				AsyncUtilityInternal.Send(() => {
 					AvatarResourceManager.Init();
 				});
 				await AvatarResourceManager.LoadTables();
+			}
+
+			using (new Process("Load Global")) {
+				await LunarscapeLoadTableManager.LoadGlobal(
+					async (LunarscapeLoadTable.LoadGroup group) => {
+						AsyncUtilityInternal.Send(() => {
+							foreach(LunarscapeLoadTable.AvatarSpawn avatar in group.avatarSpawns) {
+								AvatarResourceManager.CreatePrefab(avatar.avatarId);
+								ECSUtilityInternal.ExecuteCommandBufferTemp(commandBuffer => {
+									Entity entity = commandBuffer.CreateEntity();
+									commandBuffer.AddComponent(
+										entity, 
+										new LunarscapeAvatarSpawnRequest{
+											id = avatar.avatarId,
+											position = avatar.position,
+											rotation = avatar.rotation,
+										}
+									);
+								});
+							}
+						});
+						await Task.Yield();
+					}
+				);
 			}
 
 			// エントリーの作成

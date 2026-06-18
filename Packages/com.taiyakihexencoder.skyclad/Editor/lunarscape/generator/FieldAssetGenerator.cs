@@ -76,7 +76,8 @@ namespace skyclad.lunarscape.editor {
 				assets[i] = AssetDatabase.LoadAssetAtPath<FieldEditorAsset>(assetPath);
 			}
 
-			foreach(FieldEditorAsset asset in assets) {
+			for(int n = 0; n < assets.Length; ++n) {
+				FieldEditorAsset asset = assets[n];
 				FieldMeshAsset mainAsset = ScriptableObject.CreateInstance<FieldMeshAsset>();
 				SkycladEditorUtility.Asset.Create(mainAsset, $"Assets{Path.DirectorySeparatorChar}{LunarEditorConst.AUTO_GENERATE_RESOURCE_PATH}{Path.DirectorySeparatorChar}{typeof(FieldMeshAsset).Name}{Path.DirectorySeparatorChar}{asset.name}.asset");
 				SerializedObject mainAssetObj = new SerializedObject(mainAsset);
@@ -124,6 +125,7 @@ namespace skyclad.lunarscape.editor {
 					p.FindPropertyRelative("id").intValue = asset.Id;
 					p.FindPropertyRelative("address").stringValue = asset.RuntimeAssetAddress;
 					p.FindPropertyRelative("name").stringValue = asset.name;
+					p.FindPropertyRelative("guid").stringValue = guids[n];
 					p.FindPropertyRelative("position").vector3Value = asset.Position;
 					p.FindPropertyRelative("rotation").quaternionValue = asset.Rotation;
 					p.FindPropertyRelative("boundsMin").vector3Value = regionMin + asset.Position;

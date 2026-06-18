@@ -9,6 +9,10 @@ namespace skyclad.lunarscape.internalProc {
 			public int id;
 			public string address;
 			public string name;
+
+			// メッシュ編集ScriptableObjectのguid
+			public string guid;
+
 			public Vector3 position;
 			public Quaternion rotation;
 			public Vector3 boundsMin;

@@ -2,6 +2,76 @@
 using UnityEngine.UIElements;
 
 namespace skyclad.editor {
+	public sealed class SelectableListView<T> : CommonVisualElement<SelectableListView<T>> where T : class {
+		private ScrollView _scrollView;
+		private T _selected;
+		private Color _selectedColor;
+
+		public System.Action<T> selectionChanged;
+
+		public SelectableListView() {
+			_scrollView = new ScrollView(ScrollViewMode.Vertical);
+			_scrollView.style.flexDirection = FlexDirection.Column;
+			_scrollView.verticalScrollerVisibility = ScrollerVisibility.Hidden;
+			Add(_scrollView);
+		}
+
+		public SelectableListView<T> SelectedColor(Color color) {
+			_selectedColor = color;
+			return this;
+		}
+
+		public void Select(T key) {
+			if (!key.Equals(_selected)) {
+				foreach(VisualElement ve in _scrollView.Children()) {
+					if (ve.userData is T userData && userData.Equals(key)) {
+						_selected = key;
+						OnListSelected();
+						selectionChanged?.Invoke(userData);
+					}
+				}
+			}
+		}
+
+		public void AddSelection(T key, VisualElement ve) {
+			ve.userData = key;
+			ve.style.width = new StyleLength(StyleKeyword.Auto);
+			ve.RegisterCallback<MouseDownEvent>(
+				evt => {
+					if(evt.button == 0) {
+						if (ve.userData is T userData && !userData.Equals(_selected)) {
+							_selected = userData;
+							OnListSelected();
+							selectionChanged?.Invoke(userData);
+						}
+					}
+				}
+			);
+			_scrollView.Add(ve);
+		}
+
+		private void OnListSelected() {
+			foreach(VisualElement ve in _scrollView.Children()) {
+				if (ve.userData is T userData) {
+					Color color = _selectedColor;
+					color.a = userData.Equals(_selected) ? 1.0f : 0.0f;
+					ve.style.backgroundColor = new StyleColor(color);
+				}
+			}
+		}
+
+		public void Unselect() {
+			_selected = null;
+			OnListSelected();
+			selectionChanged?.Invoke(null);
+		}
+
+		public void ClearElements() {
+			_scrollView.Clear();
+			_selected = null;
+		}
+	}
+
 	public class Spacer : CommonVisualElement<Spacer> {
 		public Spacer(float width = 0f, float height = 0f) {
 			style.width = width;
