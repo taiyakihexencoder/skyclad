@@ -56,8 +56,12 @@ namespace skyclad.lunarscape {
 			await _loader.CreateHeaderEntities();
 		}
 
-		internal static async Task CreateMeshEntities(Entity rootEntity, int id) {
-			await _loader.CreateMeshEntities(rootEntity, id);
+		internal static async Task<FieldMeshAssetLoader.FieldRes> RequestLoad(int id) {
+			return await _loader.RequestLoadField(id);
+		}
+
+		internal static void CreateFieldMeshEntities(Entity rootEntity, int id, FieldMeshAssetLoader.FieldRes fieldRes) {
+			_loader.CreateMeshEntities(rootEntity, id, fieldRes);
 		}
 
 		internal static void UnloadAll() {

@@ -31,6 +31,45 @@ namespace skyclad.internalProc {
 			commandBuffer.Dispose();
 		}
 
+		public static void ForEach<T>(this EntityQuery query, System.Action<T> action) where T: unmanaged, IComponentData {
+			NativeArray<T> array = query.ToComponentDataArray<T>(Allocator.Temp);
+			foreach(T component in array) {
+				action(component);
+			}
+			array.Dispose();
+		}
+
+		public static void ForEach<T>(this EntityQuery query, System.Action<int, T> action) where T: unmanaged, IComponentData {
+			NativeArray<T> array = query.ToComponentDataArray<T>(Allocator.Temp);
+			for(int i = 0; i < array.Length; ++i) {
+				action(i, array[i]);
+			}
+			array.Dispose();
+		}
+
+		public static void ForEach(this EntityQuery query, System.Action<Entity> action) {
+			NativeArray<Entity> entities = query.ToEntityArray(Allocator.Temp);
+			foreach (Entity entity in entities) {
+				action(entity);
+			}
+			entities.Dispose();
+		}
+
+		public static void ForEach(this EntityQuery query, System.Action<int, Entity> action) {
+			NativeArray<Entity> entities = query.ToEntityArray(Allocator.Temp);
+			for (int i = 0; i < entities.Length; ++i) {
+				action(i, entities[i]);
+			}
+			entities.Dispose();
+		}
+
+		public static void DestroyEntityInQuery(EntityQuery query) {
+			EntityCommandBuffer commandBuffer = new EntityCommandBuffer(Allocator.Temp);
+			commandBuffer.DestroyEntity(query, EntityQueryCaptureMode.AtPlayback);
+			commandBuffer.Playback(EntityManager);
+			commandBuffer.Dispose();
+		}
+
 		public static DestroyJob Destroy(ref this EntityCommandBuffer commandBuffer) {
 			return new DestroyJob {
 				commandBuffer = commandBuffer,

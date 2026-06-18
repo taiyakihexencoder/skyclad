@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using skyclad.internalProc;
 using skyclad.lunarscape.internalProc;
 using Unity.Collections;
@@ -22,29 +23,42 @@ namespace skyclad.lunarscape {
 
 		private void Update() {
 			if (!_createQuery.IsEmpty) {
-				CreateFieldEntity();
+				LoadField();
 			}
 		}
 
-		private void CreateFieldEntity() {
-			NativeArray<LunarscapeFieldCreateRequest> requests = _createQuery.ToComponentDataArray<LunarscapeFieldCreateRequest>(Allocator.Temp);
-			Entity[] entities = new Entity[requests.Length];
-			int[] ids = new int[requests.Length];
-			for(int i = 0; i < requests.Length; ++i) {
-				entities[i] = requests[i].entity;
-				ids[i] = requests[i].id;
-			}
-			requests.Dispose();
+		private async void LoadField() {
+			int entityCount = _createQuery.CalculateEntityCount();
+			Entity[] entities = new Entity[entityCount];
+			int[] ids = new int[entityCount];
 
-			ECSUtilityInternal.ExecuteCommandBufferTemp( commandBuffer => {
-				commandBuffer.DestroyEntity(_createQuery, EntityQueryCaptureMode.AtPlayback);
-			});
-
-			_ = Task.Run(async () => {
-				for(int i = 0; i < entities.Length; ++i) {
-					await FieldManager.CreateMeshEntities(entities[i], ids[i]);
+			_createQuery.ForEach<LunarscapeFieldCreateRequest>(
+				(index, request) => {
+					entities[index] = request.entity;
+					ids[index] = request.id;
 				}
-			});
+			);
+			ECSUtilityInternal.DestroyEntityInQuery(_createQuery);
+
+
+			FieldMeshAssetLoader.FieldRes[] fieldResList = await Task.Run(
+				async () => {
+					FieldMeshAssetLoader.FieldRes[] fieldResList = new FieldMeshAssetLoader.FieldRes[entities.Length];
+					for (int i = 0; i < entities.Length; ++i) {
+						fieldResList[i] = await FieldManager.RequestLoad(ids[i]);
+					}
+					return fieldResList;
+				}
+			);
+
+			for(int i = 0; i < entityCount; ++i) {
+				ECSUtilityInternal.ExecuteCommandBufferTemp( commandBuffer => {
+					FieldManager.CreateFieldMeshEntities(entities[i], ids[i], fieldResList[i]);
+					Entity requestEntity = commandBuffer.CreateEntity();
+					// フィールドとセットのコンテンツの読込を依頼
+					commandBuffer.AddComponent(requestEntity, new LunarscapeLoadTableRequest{ guid = fieldResList[i].guid, });
+				});
+			}
 		}
 	}
 }

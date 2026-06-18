@@ -129,6 +129,7 @@ namespace skyclad.lunarscape.editor {
 						p.Of("avatarSpawns").arraySize = 0;
 						groupProperty = p;
 					});
+					_loadTableObj.ApplyModifiedProperties();
 				}
 
 

@@ -81,6 +81,10 @@ namespace skyclad.lunarscape.editor {
 				FieldMeshAsset mainAsset = ScriptableObject.CreateInstance<FieldMeshAsset>();
 				SkycladEditorUtility.Asset.Create(mainAsset, $"Assets{Path.DirectorySeparatorChar}{LunarEditorConst.AUTO_GENERATE_RESOURCE_PATH}{Path.DirectorySeparatorChar}{typeof(FieldMeshAsset).Name}{Path.DirectorySeparatorChar}{asset.name}.asset");
 				SerializedObject mainAssetObj = new SerializedObject(mainAsset);
+
+				SerializedProperty guidProperty = mainAssetObj.FindProperty("guid");
+				guidProperty.stringValue = guids[n];
+
 				SerializedProperty subassetsProperty = mainAssetObj.FindProperty("subassets");
 				subassetsProperty.arraySize = asset.MeshCount;
 

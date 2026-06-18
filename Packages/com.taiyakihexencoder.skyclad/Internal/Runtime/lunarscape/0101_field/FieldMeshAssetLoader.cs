@@ -6,6 +6,7 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Physics;
 using Unity.Transforms;
+using static skyclad.lunarscape.internalProc.FieldMeshAssetLoader;
 
 namespace skyclad.lunarscape.internalProc {
 	public sealed class FieldMeshAssetLoader {
@@ -15,6 +16,7 @@ namespace skyclad.lunarscape.internalProc {
 		}
 
 		public struct FieldRes {
+			public string guid;
 			public MeshInfo[] meshes;
 		}
 
@@ -123,7 +125,7 @@ namespace skyclad.lunarscape.internalProc {
 			);
 		}
 
-		public async Task CreateMeshEntities(Entity rootEntity, int id) {
+		public async Task<FieldRes> RequestLoadField(int id) {
 			// loadCacheで読込の順番を記憶しておく
 			// loadCacheにidが存在すれば既にロード済なので再ロードは不要
 			// 読込の有無に関係なく、指定したidをloadCacheの末尾に置くことで最後に読み込んだ扱いにする。
@@ -134,14 +136,16 @@ namespace skyclad.lunarscape.internalProc {
 			} else {
 				// サブアセットはAddressablesで親からまとめて読み込めないので一個ずつ取得する必要がある
 				string address = _addressTable[id];
+				string guid = "";
 				string[] subassetList = new string[0];
 				await ResourceUtilityInternal.LoadTemp<FieldMeshAsset>(
 					address,
 					asset => {
+						guid = asset.guid;
 						subassetList = asset.subassets;
 					}
 				);
-
+				
 				UnityEngine.Mesh[] meshList = await ResourceUtilityInternal.LoadSubAssets<UnityEngine.Mesh>(address, subassetList);
 				MeshInfo[] meshes = new MeshInfo[meshList.Length];
 
@@ -156,36 +160,38 @@ namespace skyclad.lunarscape.internalProc {
 					}
 				});
 
-				fieldRes = new FieldRes{ meshes = meshes, };
+				fieldRes = new FieldRes{ 
+					guid = guid,
+					meshes = meshes, 
+				};
 				_fields.Add(id, fieldRes);
 				AddToLoadCache(id);
 			}
+			return fieldRes;
+		}
 
-			AsyncUtilityInternal.Post(
-				() => {
-					ECSUtilityInternal.ExecuteCommandBufferTemp(commandBuffer => {
-						DynamicBuffer<LinkedEntityGroup> group = commandBuffer.SetBuffer<LinkedEntityGroup>(rootEntity);
+		public void CreateMeshEntities(Entity rootEntity, int id, FieldRes fieldRes) {
+			ECSUtilityInternal.ExecuteCommandBufferTemp(commandBuffer => {
+				DynamicBuffer<LinkedEntityGroup> group = commandBuffer.SetBuffer<LinkedEntityGroup>(rootEntity);
 
-						LunarscapeFieldMeshComponent fieldMeshComponent = new LunarscapeFieldMeshComponent { meshId = id, };
-						LocalTransform localTransform = LocalTransform.FromPositionRotationScale(float3.zero, quaternion.identity, 1.0f);
-						LocalToWorld localToWorld = new LocalToWorld { Value = float4x4.identity, };
-						PhysicsWorldIndex physicsWorldIndex = new PhysicsWorldIndex{ Value = LunarConst.ENABLED_PHYSICS_INDEX, };
-						Parent parent = new Parent { Value = rootEntity, };
-						for (int i = 0; i < fieldRes.meshes.Length; ++i) {
-							Entity entity = commandBuffer.CreateEntity(_meshArchetype);
-							commandBuffer.SetComponent(entity, fieldMeshComponent);
-							commandBuffer.SetComponent(entity, new PhysicsCollider { Value = fieldRes.meshes[i].collider, });
-							commandBuffer.SetComponent(entity, localTransform);
-							commandBuffer.SetComponent(entity, localToWorld);
-							commandBuffer.SetComponent(entity, parent);
-							commandBuffer.AddSharedComponent(entity, physicsWorldIndex);
-							commandBuffer.SetDebugName(entity, fieldRes.meshes[i].name);
+				LunarscapeFieldMeshComponent fieldMeshComponent = new LunarscapeFieldMeshComponent { meshId = id, };
+				LocalTransform localTransform = LocalTransform.FromPositionRotationScale(float3.zero, quaternion.identity, 1.0f);
+				LocalToWorld localToWorld = new LocalToWorld { Value = float4x4.identity, };
+				PhysicsWorldIndex physicsWorldIndex = new PhysicsWorldIndex{ Value = LunarConst.ENABLED_PHYSICS_INDEX, };
+				Parent parent = new Parent { Value = rootEntity, };
+				for (int i = 0; i < fieldRes.meshes.Length; ++i) {
+					Entity entity = commandBuffer.CreateEntity(_meshArchetype);
+					commandBuffer.SetComponent(entity, fieldMeshComponent);
+					commandBuffer.SetComponent(entity, new PhysicsCollider { Value = fieldRes.meshes[i].collider, });
+					commandBuffer.SetComponent(entity, localTransform);
+					commandBuffer.SetComponent(entity, localToWorld);
+					commandBuffer.SetComponent(entity, parent);
+					commandBuffer.AddSharedComponent(entity, physicsWorldIndex);
+					commandBuffer.SetDebugName(entity, fieldRes.meshes[i].name);
 
-							group.Add(new LinkedEntityGroup { Value = entity, });
-						}
-					});
+					group.Add(new LinkedEntityGroup { Value = entity, });
 				}
-			);
+			});
 		}
 
 		public void UnloadAll() {

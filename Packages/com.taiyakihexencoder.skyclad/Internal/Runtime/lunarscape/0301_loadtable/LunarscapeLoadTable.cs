@@ -28,7 +28,7 @@ namespace skyclad.lunarscape.internalProc {
 			LoadGroup targetGroup = null;
 
 			foreach(LoadGroup group in _groups) {
-				if (group.fieldGuid == GLOBAL_GUID) {
+				if (group.fieldGuid == groupGuid) {
 					targetGroup = group;
 					break;
 				}

@@ -18,8 +18,8 @@ namespace skyclad.lunarscape.internalProc {
 			);
 		}
 
-		public static async Task LoadGlobal(System.Func<LunarscapeLoadTable.LoadGroup, Task> task) {
-			await table.Load(LunarscapeLoadTable.GLOBAL_GUID, task);
+		public static async Task Load(string guid, System.Func<LunarscapeLoadTable.LoadGroup, Task> task) {
+			await table.Load(guid, task);
 		}
 	}
 }

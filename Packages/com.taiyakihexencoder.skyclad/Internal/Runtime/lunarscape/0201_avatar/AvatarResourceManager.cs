@@ -16,6 +16,7 @@ namespace skyclad.lunarscape.internalProc {
 		private static EntityArchetype _archetype;
 
 		private static Entity _prefabRoot;
+		private static List<int> _generatedPrefabList;
 
 		static AvatarResourceManager() {
 			_physicsColliders = new Dictionary<int, BlobAssetReference<Collider>>();
@@ -46,6 +47,8 @@ namespace skyclad.lunarscape.internalProc {
 
 				ComponentType.ReadWrite<LunarscapeAvatar>()
 			);
+
+			_generatedPrefabList = new List<int>();
 		}
 
 		public static async Task LoadTables() {
@@ -77,6 +80,8 @@ namespace skyclad.lunarscape.internalProc {
 		}
 
 		internal static void UnloadTables() {
+			_generatedPrefabList?.Clear();
+
 			foreach(BlobAssetReference<Collider> blob in _physicsColliders.Values) {
 				if (blob.IsCreated) { blob.Dispose(); }
 			}
@@ -94,23 +99,27 @@ namespace skyclad.lunarscape.internalProc {
 		}
 
 		public static void CreatePrefab(int id) {
-			if (TryGetAvaterSetting(id, out LunarscapeAvatarTable.AvatarSettings setting)) {
-				if (TryGetPhysicsCollider(setting.collider, out BlobAssetReference<Collider> collider)) {
-					ECSUtilityInternal.ExecuteCommandBufferTemp(commandBuffer => {
-						Entity entity = commandBuffer.CreateEntity(_archetype);
-						commandBuffer.SetComponent(entity, new PhysicsCollider { Value = collider, });
-						commandBuffer.SetComponent(entity, new Parent{ Value = _prefabRoot, });
-						commandBuffer.SetComponent(entity, LocalTransform.FromPosition(float3.zero));
-						commandBuffer.SetComponent(entity, new LocalToWorld{ Value = float4x4.identity, });
-						commandBuffer.SetComponent(entity, new PhysicsGravityFactor { Value = 1f, });
-						commandBuffer.SetComponent(entity, PhysicsMass.CreateDynamic(MassProperties.UnitSphere, 50.0f));
-						commandBuffer.SetComponent(entity, new LunarscapeAvatar { id = setting.id, });
-						commandBuffer.AddSharedComponent(entity, new PhysicsWorldIndex { Value = LunarConst.ENABLED_PHYSICS_INDEX, });
-						commandBuffer.SetDebugName(entity, setting.name);
-					});
+			if (!_generatedPrefabList.Contains(id)) {
+				if (TryGetAvaterSetting(id, out LunarscapeAvatarTable.AvatarSettings setting)) {
+					if (TryGetPhysicsCollider(setting.collider, out BlobAssetReference<Collider> collider)) {
+						ECSUtilityInternal.ExecuteCommandBufferTemp(commandBuffer => {
+							Entity entity = commandBuffer.CreateEntity(_archetype);
+							commandBuffer.SetComponent(entity, new PhysicsCollider { Value = collider, });
+							commandBuffer.SetComponent(entity, new Parent{ Value = _prefabRoot, });
+							commandBuffer.SetComponent(entity, LocalTransform.FromPosition(float3.zero));
+							commandBuffer.SetComponent(entity, new LocalToWorld{ Value = float4x4.identity, });
+							commandBuffer.SetComponent(entity, new PhysicsGravityFactor { Value = 1f, });
+							commandBuffer.SetComponent(entity, PhysicsMass.CreateDynamic(MassProperties.UnitSphere, 50.0f));
+							commandBuffer.SetComponent(entity, new LunarscapeAvatar { id = setting.id, });
+							commandBuffer.AddSharedComponent(entity, new PhysicsWorldIndex { Value = LunarConst.ENABLED_PHYSICS_INDEX, });
+							commandBuffer.SetDebugName(entity, setting.name);
+						});
+
+						_generatedPrefabList.Add(id);
+					}
+				} else {
+					D.LogW($"id = {id} is not found.");
 				}
-			} else {
-				D.LogW($"id = {id} is not found.");
 			}
 		}
 

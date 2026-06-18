@@ -16,6 +16,8 @@ namespace skyclad.lunarscape {
 		private EntityQuery _enterQuery;
 		private EntityArchetype _playerArchetype;
 
+		private EntityQuery _loadTableQuery;
+
 		[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
 		private static void CreateInstance() {
 			if (_instance == null) {
@@ -91,30 +93,45 @@ namespace skyclad.lunarscape {
 				ComponentType.ReadWrite<LocalToWorld>(),
 				ComponentType.ReadWrite<Parent>()
 			);
+
+			_loadTableQuery = new EntityQueryBuilder(Allocator.Temp)
+				.WithAll<LunarscapeLoadTableRequest>()
+				.Build(ECSUtilityInternal.EntityManager);
 		}
 
 		private void Update() {
 			if (!_enterQuery.IsEmpty) { 
 				EnterLunarscape();
 			}
+
+			if (!_loadTableQuery.IsEmpty) {
+				_loadTableQuery.ForEach<LunarscapeLoadTableRequest>(
+					request => {
+						FixedString64Bytes guid = request.guid;
+						_ = Task.Run(async () => { await LoadGroup(guid.ToString()); });
+					}
+				);
+				ECSUtilityInternal.DestroyEntityInQuery(_loadTableQuery);
+			}
 		}
 
 		private void EnterLunarscape() {
-			NativeArray<Entity> entities = _enterQuery.ToEntityArray(Allocator.Temp);
-
 			// Entry Pointの抽出
-			DynamicBuffer<LunarscapeEntrySetting> entryPointBuffer = ECSUtilityInternal.EntityManager.GetBuffer<LunarscapeEntrySetting>(entities[0]);
-			LunarscapeEntrySetting[] entries = new LunarscapeEntrySetting[entryPointBuffer.Length];
-			for(int i = 0; i < entries.Length; ++i) {
-				entries[i] = entryPointBuffer[i];
-			}
-
-			entities.Dispose();
+			LunarscapeEntrySetting[] entries = new LunarscapeEntrySetting[0];
+			_enterQuery.ForEach(
+				(index, entity) => {
+					if (index == 0) {
+						DynamicBuffer<LunarscapeEntrySetting> entryPointBuffer = ECSUtilityInternal.EntityManager.GetBuffer<LunarscapeEntrySetting>(entity);
+						entries = new LunarscapeEntrySetting[entryPointBuffer.Length];
+						for (int i = 0; i < entries.Length; ++i) {
+							entries[i] = entryPointBuffer[i];
+						}
+					}
+				}
+			);
 
 			// リクエストの削除
-			ECSUtilityInternal.ExecuteCommandBufferTemp(commandBuffer => {
-				commandBuffer.DestroyEntity(_enterQuery, EntityQueryCaptureMode.AtPlayback);
-			});
+			ECSUtilityInternal.DestroyEntityInQuery(_enterQuery);
 
 			// 開始処理
 			_ = Task.Run(async () => {
@@ -147,27 +164,7 @@ namespace skyclad.lunarscape {
 			}
 
 			using (new Process("Load Global")) {
-				await LunarscapeLoadTableManager.LoadGlobal(
-					async (LunarscapeLoadTable.LoadGroup group) => {
-						AsyncUtilityInternal.Send(() => {
-							foreach(LunarscapeLoadTable.AvatarSpawn avatar in group.avatarSpawns) {
-								AvatarResourceManager.CreatePrefab(avatar.avatarId);
-								ECSUtilityInternal.ExecuteCommandBufferTemp(commandBuffer => {
-									Entity entity = commandBuffer.CreateEntity();
-									commandBuffer.AddComponent(
-										entity, 
-										new LunarscapeAvatarSpawnRequest{
-											id = avatar.avatarId,
-											position = avatar.position,
-											rotation = avatar.rotation,
-										}
-									);
-								});
-							}
-						});
-						await Task.Yield();
-					}
-				);
+				await LoadGroup(LunarscapeLoadTable.GLOBAL_GUID);
 			}
 
 			// エントリーの作成
@@ -199,6 +196,34 @@ namespace skyclad.lunarscape {
 					commandBuffer.SetComponent(entity, new LocalToWorld{ Value = float4x4.TRS(entry.position, entry.rotation, new float3(1f,1f,1f))});
 					commandBuffer.SetDebugName(entity, entry.entryName);
 				});
+			});
+			await Task.Yield();
+		}
+
+		private async Task LoadGroup(string guid) {
+			 await LunarscapeLoadTableManager.Load(guid, async group => {
+				using(new Process($"Load Table@{group.fieldGuid}")) {
+					await LoadGroupAvatars(group);
+				}
+			 });
+		}
+
+		private async Task LoadGroupAvatars(LunarscapeLoadTable.LoadGroup group) {
+			AsyncUtilityInternal.Send(() => {
+				foreach(LunarscapeLoadTable.AvatarSpawn avatar in group.avatarSpawns) {
+					AvatarResourceManager.CreatePrefab(avatar.avatarId);
+					ECSUtilityInternal.ExecuteCommandBufferTemp(commandBuffer => {
+						Entity entity = commandBuffer.CreateEntity();
+						commandBuffer.AddComponent(
+							entity, 
+							new LunarscapeAvatarSpawnRequest{
+								id = avatar.avatarId,
+								position = avatar.position,
+								rotation = avatar.rotation,
+							}
+						);
+					});
+				}
 			});
 			await Task.Yield();
 		}
