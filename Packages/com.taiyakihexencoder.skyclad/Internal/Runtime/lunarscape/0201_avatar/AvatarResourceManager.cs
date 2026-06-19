@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using skyclad.internalProc;
+using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Physics;
@@ -18,8 +19,15 @@ namespace skyclad.lunarscape.internalProc {
 		private static Entity _prefabRoot;
 		private static List<int> _generatedPrefabList;
 
+		/// <summary>
+		/// 読込済のLoadTableのグループ。
+		/// Prefabを削除して良いか確認するために使う。
+		/// </summary>
+		private static Dictionary<string, IList<int>> _avatarLoadedTable;
+
 		static AvatarResourceManager() {
 			_physicsColliders = new Dictionary<int, BlobAssetReference<Collider>>();
+			_avatarLoadedTable = new Dictionary<string, IList<int>>();
 			UnityEngine.Application.quitting += UnloadTables;
 		}
 
@@ -120,6 +128,36 @@ namespace skyclad.lunarscape.internalProc {
 				} else {
 					D.LogW($"id = {id} is not found.");
 				}
+			}
+		}
+
+		public static void AddLoadPrefabTable(string guid, IList<int> list) {
+			if (! _avatarLoadedTable.ContainsKey(guid)) {
+				_avatarLoadedTable.Add(guid, list);
+			}
+		}
+
+		public static void RemoveLoadPrefabTable(string guid) {
+			if (_avatarLoadedTable.TryGetValue(guid, out IList<int> avatarIds)) {
+				// テーブルを削除
+				_avatarLoadedTable.Remove(guid);
+
+				// ほかで読込がされていないprefabのリストを取得
+				List<int> removeIds = new List<int>(avatarIds);
+
+				foreach(IList<int> ids in _avatarLoadedTable.Values) {
+					foreach(int id in ids) {
+						removeIds.Remove(id);
+					}
+				}
+
+				// 不要になったprefabを削除
+				ECSUtilityInternal.ExecuteCommandBufferTemp(commandBuffer => {
+					foreach(int avatarId in removeIds) {
+						Entity entity = commandBuffer.CreateEntity();
+						commandBuffer.AddComponent(entity, new LunarscapeAvatarDeletePrefabRequest { id = avatarId, });
+					}
+				});
 			}
 		}
 

@@ -12,10 +12,21 @@ namespace skyclad.lunarscape.editor {
 		private VisualElement _contentPane;
 		private SerializedObject _loadTableObj;
 
+		private DictionaryPopupBuilder<int> _playerPopupBuilder;
+
 		public LunarscapeEditorGeneralTab() {
 			VisualElement mainFrame = LunarscapeCommonDesign.MainFrame();
 			mainFrame.Add(LunarscapeCommonDesign.Title("General"));
 			Add(mainFrame);
+
+			List<int> keys = new List<int>();
+			for (int i = 0; i < 16; ++i) {
+				keys.Add(i);
+			}
+			_playerPopupBuilder = new DictionaryPopupBuilder<int>()
+				.SetConverter(index => $"Player {index.ToString("00")}")
+				.SetKeys(keys);
+
 
 			if (TryGetLoadTable(out LunarscapeLoadTable loadTable)) {
 				_loadTableObj = new SerializedObject(loadTable);
@@ -155,7 +166,10 @@ namespace skyclad.lunarscape.editor {
 				headerRotation.style.flexBasis = 0f;
 				headerRotation.style.flexGrow = 2f;
 
-				header.AddChildren(headerAvatar, headerPosition, headerRotation, new Spacer(width:60f));
+				Label headerFieldLoad = new Label("Player");
+				headerFieldLoad.style.width = 50.0f;
+
+				header.AddChildren(headerAvatar, headerPosition, headerRotation, headerFieldLoad, new Spacer(width:60f));
 				_contentPane.Add(header);
 
 				for (int i = 0; i < avatarSpawnsProperty.arraySize; ++i) {
@@ -164,6 +178,7 @@ namespace skyclad.lunarscape.editor {
 					SerializedProperty avatarIdProperty = avatarSpawnProperty.Of("avatarId");
 					SerializedProperty positionProperty = avatarSpawnProperty.Of("position");
 					SerializedProperty rotationProperty = avatarSpawnProperty.Of("rotation");
+					SerializedProperty playerIndexProperty = avatarSpawnProperty.Of("playerIndex");
 
 					Row row = new Row()
 						.Padding(horizontal: 24.0f);
@@ -187,24 +202,59 @@ namespace skyclad.lunarscape.editor {
 						avatarIdProperty.intValue = v.newValue;
 						_loadTableObj.ApplyModifiedProperties();
 					});
+					row.AddChildren(avatarField);
 
-					Vector3Field positionField = new Vector3Field();
-					positionField.style.flexBasis = 0f;
-					positionField.style.flexGrow = 2f;
-					positionField.SetValueWithoutNotify(positionProperty.vector3Value);
-					positionField.RegisterValueChangedCallback(v => {
-						positionProperty.vector3Value = v.newValue;
-						_loadTableObj.ApplyModifiedProperties();
-					});
+					if (playerIndexProperty.intValue < 0) {
+						Vector3Field positionField = new Vector3Field();
+						positionField.style.flexBasis = 0f;
+						positionField.style.flexGrow = 2f;
+						positionField.SetValueWithoutNotify(positionProperty.vector3Value);
+						positionField.RegisterValueChangedCallback(v => {
+							positionProperty.vector3Value = v.newValue;
+							_loadTableObj.ApplyModifiedProperties();
+						});
 
-					Vector3Field rotationField = new Vector3Field();
-					rotationField.style.flexBasis = 0f;
-					rotationField.style.flexGrow = 2f;
-					rotationField.SetValueWithoutNotify(rotationProperty.quaternionValue.eulerAngles);
-					rotationField.RegisterValueChangedCallback(v => {
-						rotationProperty.quaternionValue = Quaternion.Euler(v.newValue);
+						Vector3Field rotationField = new Vector3Field();
+						rotationField.style.flexBasis = 0f;
+						rotationField.style.flexGrow = 2f;
+						rotationField.SetValueWithoutNotify(rotationProperty.quaternionValue.eulerAngles);
+						rotationField.RegisterValueChangedCallback(v => {
+							rotationProperty.quaternionValue = Quaternion.Euler(v.newValue);
+							_loadTableObj.ApplyModifiedProperties();
+						});
+
+						row.AddChildren(positionField, rotationField);
+					} else {
+						PopupField<int> playerIndexPopupField = _playerPopupBuilder.Generate(playerIndexProperty.intValue);
+						playerIndexPopupField.style.flexBasis = 0f;
+						playerIndexPopupField.style.flexGrow = 4f;
+						playerIndexPopupField.RegisterValueChangedCallback(v => {
+							playerIndexProperty.intValue = v.newValue;
+							_loadTableObj.ApplyModifiedProperties();
+						});
+						row.AddChildren(playerIndexPopupField);
+					}
+
+					VisualElement fieldLoaderToggle = new VisualElement();
+					fieldLoaderToggle.style.flexDirection = FlexDirection.Row;
+					fieldLoaderToggle.style.justifyContent = Justify.Center;
+					fieldLoaderToggle.style.alignContent = Align.Center;
+					fieldLoaderToggle.style.width = 50.0f;
+
+					Toggle fieldLoaderField = new Toggle();
+					fieldLoaderField.SetValueWithoutNotify(playerIndexProperty.intValue >= 0);
+					fieldLoaderField.RegisterValueChangedCallback(v => {
+						if (v.newValue) {
+							playerIndexProperty.intValue = 0;
+						} else {
+							playerIndexProperty.intValue = -1;
+							positionProperty.vector3Value = Vector3.zero;
+							rotationProperty.quaternionValue = Quaternion.identity;
+						}
 						_loadTableObj.ApplyModifiedProperties();
+						UpdateContentPane(guid);
 					});
+					fieldLoaderToggle.Add(fieldLoaderField);
 
 					Button upButton = new Button(
 						clickEvent: () => {
@@ -228,7 +278,7 @@ namespace skyclad.lunarscape.editor {
 					deleteButton.style.width = 30.0f;
 
 
-					row.AddChildren(avatarField, positionField, rotationField, upButton, deleteButton);
+					row.AddChildren(fieldLoaderToggle, upButton, deleteButton);
 
 					_contentPane.Add(row);
 				}
@@ -239,6 +289,7 @@ namespace skyclad.lunarscape.editor {
 							p.Of("avatarId").intValue = -1;
 							p.Of("position").vector3Value = Vector3.zero;
 							p.Of("rotation").quaternionValue = Quaternion.identity;
+							p.Of("playerIndex").intValue = -1;
 						});
 						_loadTableObj.ApplyModifiedProperties();
 						UpdateContentPane(guid);

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using skyclad.internalProc;
 using Unity.Collections;
@@ -6,7 +7,6 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Physics;
 using Unity.Transforms;
-using static skyclad.lunarscape.internalProc.FieldMeshAssetLoader;
 
 namespace skyclad.lunarscape.internalProc {
 	public sealed class FieldMeshAssetLoader {
@@ -20,8 +20,8 @@ namespace skyclad.lunarscape.internalProc {
 			public MeshInfo[] meshes;
 		}
 
-		private Dictionary<int, string> _addressTable;
-		private Dictionary<int, FieldRes> _fields;
+		private ConcurrentDictionary<int, string> _addressTable;
+		private ConcurrentDictionary<int, FieldRes> _fields;
 
 		private List<int> _loadCache;
 
@@ -36,8 +36,8 @@ namespace skyclad.lunarscape.internalProc {
 		public FieldMeshAssetLoader(Material material, CollisionFilter collisionFilter) {
 			_material = material;
 			_collisionFilter = collisionFilter;
-			_fields = new Dictionary<int, FieldRes>();
-			_addressTable = new Dictionary<int, string>();
+			_fields = new ConcurrentDictionary<int, FieldRes>();
+			_addressTable = new ConcurrentDictionary<int, string>();
 			_loadCache = new List<int>();
 
 			_archetype = ECSUtilityInternal.EntityManager.CreateArchetype(
@@ -95,7 +95,7 @@ namespace skyclad.lunarscape.internalProc {
 						boundsMax[i] = rows[i].boundsMax;
 						name[i] = rows[i].name;
 
-						_addressTable.Add(rows[i].id, rows[i].address);
+						_addressTable.TryAdd(rows[i].id, rows[i].address);
 					}
 				}
 			);
@@ -164,8 +164,11 @@ namespace skyclad.lunarscape.internalProc {
 					guid = guid,
 					meshes = meshes, 
 				};
-				_fields.Add(id, fieldRes);
-				AddToLoadCache(id);
+				_fields.TryAdd(id, fieldRes);
+
+				AsyncUtilityInternal.Post(() => {
+					AddToLoadCache(id);
+				});
 			}
 			return fieldRes;
 		}
@@ -243,7 +246,16 @@ namespace skyclad.lunarscape.internalProc {
 					mesh.collider.Dispose();
 				}
 				ResourceUtilityInternal.Unload(_addressTable[id]);
-				_fields.Remove(id);
+
+				// フィールドとセットのコンテンツのアンロード
+				ECSUtilityInternal.ExecuteCommandBufferTemp(commandBuffer => {
+					Entity requestEntity = commandBuffer.CreateEntity();
+					commandBuffer.AddComponent(
+						requestEntity, 
+						new LunarscapeUnloadTableGroupRequest { guid = field.guid, }
+					);
+				});
+				_fields.TryRemove(id, out FieldRes _);
 			}
 		}
 

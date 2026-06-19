@@ -4,10 +4,17 @@ using Unity.Mathematics;
 using Unity.Transforms;
 
 namespace skyclad.lunarscape.internalProc {
-	[UpdateInGroup(typeof(LunarscapeSimulationFieldSystemGroup))]
+	/// <summary>
+	/// LocalToWorldを参照するのでTransformSystemGroupよりも後に実行する。
+	/// 読み込み状態が不正になるので、ロード中のアンロードは起きないようにする。
+	/// </summary>
+	[UpdateInGroup(typeof(LunarscapeSimulationAfterTransformSystemGroup))]
 	public partial struct LunarscapeFieldUpdateSystem : ISystem {
 		private EntityQuery _query;
 		private EntityQuery _pointQuery;
+
+		private EntityQuery _loadingQuery;
+		private EntityQuery _unloadingQuery;
 
 		void ISystem.OnCreate(ref SystemState state) {
 			_query = new EntityQueryBuilder(Allocator.Temp)
@@ -20,18 +27,31 @@ namespace skyclad.lunarscape.internalProc {
 				.WithAll<LunarscapeFieldObservePoint, LocalToWorld>()
 				.Build(ref state);
 			state.RequireForUpdate(_pointQuery);
+
+			_loadingQuery = new EntityQueryBuilder(Allocator.Temp)
+				.WithAll<LunarscapeTableLoadingFlag>()
+				.Build(ref state);
 		}
 
 		void ISystem.OnUpdate(ref SystemState state) {
 			if (SystemAPI.TryGetSingleton(out SingletonLunarscapeField singleton)) {
 				NativeArray<LocalToWorld> points = _pointQuery.ToComponentDataArray<LocalToWorld>(Allocator.TempJob);
 
-				state.Dependency = new UpdateJob {
+				EntityCommandBuffer.ParallelWriter commandBuffer = CreateCommandBuffer(ref state).AsParallelWriter();
+
+				state.Dependency = new LoadJob {
 					distanceToLoad = singleton.loadFieldDistance,
-					distanceToUnload = singleton.unloadFieldDistance,
 					points = points,
-					commandBuffer = CreateCommandBuffer(ref state).AsParallelWriter(),
+					commandBuffer = commandBuffer,
 				}.ScheduleParallel(_query, state.Dependency);
+				
+				if (_loadingQuery.IsEmpty) {
+					state.Dependency = new UnloadJob {
+						distanceToUnload = singleton.unloadFieldDistance,
+						points = points,
+						commandBuffer = commandBuffer,
+					}.ScheduleParallel(_query, state.Dependency);
+				}
 
 				state.Dependency = points.Dispose(state.Dependency);
 
@@ -41,32 +61,21 @@ namespace skyclad.lunarscape.internalProc {
 		void ISystem.OnDestroy(ref SystemState state) {
 		}
 
-		partial struct UpdateJob : IJobEntity {
+		private readonly EntityCommandBuffer CreateCommandBuffer(ref SystemState state) {
+			return SystemAPI
+				.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>()
+				.CreateCommandBuffer(state.World.Unmanaged);
+		}
+
+		partial struct LoadJob : IJobEntity {
 			[ReadOnly] public float distanceToLoad;
-			[ReadOnly] public float distanceToUnload;
 			[ReadOnly] public NativeArray<LocalToWorld> points;
 			public EntityCommandBuffer.ParallelWriter commandBuffer;
 
 			void Execute([EntityIndexInQuery] int sortKey, in Entity entity, RefRW<LunarscapeFieldComponent> field, ref DynamicBuffer<LinkedEntityGroup> children) {
-				float distanceToLoadSq = distanceToLoad * distanceToLoad;
-				foreach (LocalToWorld point in points) {
-					float3 pos = point.Position;
-					if (field.ValueRO.active) {
-						if (pos.x < field.ValueRO.boundsMin.x - distanceToUnload ||
-							pos.y < field.ValueRO.boundsMin.y - distanceToUnload ||
-							pos.z < field.ValueRO.boundsMin.z - distanceToUnload ||
-							field.ValueRO.boundsMin.x + distanceToUnload < pos.x ||
-							field.ValueRO.boundsMin.y + distanceToUnload < pos.y ||
-							field.ValueRO.boundsMin.z + distanceToUnload < pos.z
-						) {
-							field.ValueRW.active = false;
-
-							// Mesh Entityを削除
-							foreach(LinkedEntityGroup child in children) {
-								commandBuffer.DestroyEntity(sortKey, child.Value);
-							}
-						}
-					} else {
+				if (!field.ValueRO.active) {
+					foreach (LocalToWorld point in points) {
+						float3 pos = point.Position;
 						if (field.ValueRO.boundsMin.x - distanceToLoad <= pos.x &&
 							field.ValueRO.boundsMin.y - distanceToLoad <= pos.y &&
 							field.ValueRO.boundsMin.z - distanceToLoad <= pos.z &&
@@ -87,16 +96,47 @@ namespace skyclad.lunarscape.internalProc {
 									id = field.ValueRO.id,
 								}
 							);
+
+							// ロード中フラグ
+							Entity waitEntity = commandBuffer.CreateEntity(sortKey);
+							commandBuffer.AddComponent(
+								sortKey,
+								waitEntity,
+								new LunarscapeTableLoadingFlag { id = field.ValueRO.id, }
+							);
 						}
 					}
 				}
 			}
 		}
 
-		private readonly EntityCommandBuffer CreateCommandBuffer(ref SystemState state) {
-			return SystemAPI
-				.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>()
-				.CreateCommandBuffer(state.World.Unmanaged);
+		partial struct UnloadJob : IJobEntity {
+			[ReadOnly] public float distanceToUnload;
+			[ReadOnly] public NativeArray<LocalToWorld> points;
+			public EntityCommandBuffer.ParallelWriter commandBuffer;
+
+			void Execute([EntityIndexInQuery] int sortKey, in Entity entity, RefRW<LunarscapeFieldComponent> field, ref DynamicBuffer<LinkedEntityGroup> children) {
+				if (field.ValueRO.active) {
+					foreach (LocalToWorld point in points) {
+					float3 pos = point.Position;
+						if (pos.x < field.ValueRO.boundsMin.x - distanceToUnload ||
+							pos.y < field.ValueRO.boundsMin.y - distanceToUnload ||
+							pos.z < field.ValueRO.boundsMin.z - distanceToUnload ||
+							field.ValueRO.boundsMin.x + distanceToUnload < pos.x ||
+							field.ValueRO.boundsMin.y + distanceToUnload < pos.y ||
+							field.ValueRO.boundsMin.z + distanceToUnload < pos.z
+						) {
+							field.ValueRW.active = false;
+
+							// Mesh Entityを削除
+							foreach(LinkedEntityGroup child in children) {
+								commandBuffer.DestroyEntity(sortKey, child.Value);
+							}
+						}
+					}
+				}
+			}
 		}
+
 	}
 }

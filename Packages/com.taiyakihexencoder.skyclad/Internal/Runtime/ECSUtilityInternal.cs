@@ -63,6 +63,26 @@ namespace skyclad.internalProc {
 			entities.Dispose();
 		}
 
+		public static void ForEach<T>(this EntityQuery query, System.Action<Entity, T> action) where T: unmanaged, IComponentData {
+			NativeArray<Entity> entities = query.ToEntityArray(Allocator.Temp);
+			NativeArray<T> array = query.ToComponentDataArray<T>(Allocator.Temp);
+			for (int i = 0; i < entities.Length; ++i) {
+				action(entities[i], array[i]);
+			}
+			entities.Dispose();
+			array.Dispose();
+		}
+
+		public static void ForEach<T>(this EntityQuery query, System.Action<int, Entity, T> action) where T: unmanaged, IComponentData {
+			NativeArray<Entity> entities = query.ToEntityArray(Allocator.Temp);
+			NativeArray<T> array = query.ToComponentDataArray<T>(Allocator.Temp);
+			for (int i = 0; i < entities.Length; ++i) {
+				action(i, entities[i], array[i]);
+			}
+			entities.Dispose();
+			array.Dispose();
+		}
+
 		public static void DestroyEntityInQuery(EntityQuery query) {
 			EntityCommandBuffer commandBuffer = new EntityCommandBuffer(Allocator.Temp);
 			commandBuffer.DestroyEntity(query, EntityQueryCaptureMode.AtPlayback);

@@ -14,9 +14,12 @@ namespace skyclad.lunarscape {
 		private static Lunarscaper _instance = null;
 
 		private EntityQuery _enterQuery;
-		private EntityArchetype _playerArchetype;
 
-		private EntityQuery _loadTableQuery;
+		private EntityQuery _loadTableGroupQuery;
+		private EntityQuery _unloadTableGroupQuery;
+		private EntityQuery _tableLoadingQuery;
+
+		private LunarscapeEntrySetting[] _entrySettings = new LunarscapeEntrySetting[0];
 
 		[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
 		private static void CreateInstance() {
@@ -86,16 +89,15 @@ namespace skyclad.lunarscape {
 			_enterQuery = new EntityQueryBuilder(Allocator.Temp)
 				.WithAll<LunarscapeEnterRequest>()
 				.Build(ECSUtilityInternal.EntityManager);
-			_playerArchetype = ECSUtilityInternal.EntityManager.CreateArchetype(
-				ComponentType.ReadOnly<LunarscapeFieldObservePoint>(),
-				ComponentType.ReadOnly<LunarscapeParentingRequest>(),
-				ComponentType.ReadWrite<LocalTransform>(),
-				ComponentType.ReadWrite<LocalToWorld>(),
-				ComponentType.ReadWrite<Parent>()
-			);
 
-			_loadTableQuery = new EntityQueryBuilder(Allocator.Temp)
-				.WithAll<LunarscapeLoadTableRequest>()
+			_loadTableGroupQuery = new EntityQueryBuilder(Allocator.Temp)
+				.WithAll<LunarscapeLoadTableGroupRequest>()
+				.Build(ECSUtilityInternal.EntityManager);
+			_unloadTableGroupQuery = new EntityQueryBuilder(Allocator.Temp)
+				.WithAll<LunarscapeUnloadTableGroupRequest>()
+				.Build(ECSUtilityInternal.EntityManager);
+			_tableLoadingQuery = new EntityQueryBuilder(Allocator.Temp)
+				.WithAll<LunarscapeTableLoadingFlag>()
 				.Build(ECSUtilityInternal.EntityManager);
 		}
 
@@ -104,14 +106,25 @@ namespace skyclad.lunarscape {
 				EnterLunarscape();
 			}
 
-			if (!_loadTableQuery.IsEmpty) {
-				_loadTableQuery.ForEach<LunarscapeLoadTableRequest>(
+			if (!_loadTableGroupQuery.IsEmpty) {
+				_loadTableGroupQuery.ForEach<LunarscapeLoadTableGroupRequest>(
 					request => {
-						FixedString64Bytes guid = request.guid;
-						_ = Task.Run(async () => { await LoadGroup(guid.ToString()); });
+						int id = request.id;
+						string guid = request.guid.ToString();
+						_ = Task.Run(() => LoadGroup(id, guid));
 					}
 				);
-				ECSUtilityInternal.DestroyEntityInQuery(_loadTableQuery);
+				ECSUtilityInternal.DestroyEntityInQuery(_loadTableGroupQuery);
+			}
+
+			if (!_unloadTableGroupQuery.IsEmpty) {
+				_unloadTableGroupQuery.ForEach<LunarscapeUnloadTableGroupRequest>(
+					request => {
+						string guid = request.guid.ToString();
+						UnloadGroup(guid);
+					}
+				);
+				ECSUtilityInternal.DestroyEntityInQuery(_unloadTableGroupQuery);
 			}
 		}
 
@@ -140,6 +153,8 @@ namespace skyclad.lunarscape {
 		}
 
 		private async Task EnterLunarscapeInternal(LunarscapeEntrySetting[] entries) {
+			_entrySettings = entries;
+
 			using (new Process("Setup Manager")) {
 				await LunarscapeLoadTableManager.Init();
 
@@ -164,15 +179,8 @@ namespace skyclad.lunarscape {
 			}
 
 			using (new Process("Load Global")) {
-				await LoadGroup(LunarscapeLoadTable.GLOBAL_GUID);
+				await LoadGroup(-1, LunarscapeLoadTable.GLOBAL_GUID);
 			}
-
-			// エントリーの作成
-			Task[] parallelEntryTasks = new Task[entries.Length];
-			for(int i = 0; i < entries.Length; ++i) {
-				parallelEntryTasks[i] = CreatePlayerEntity(entries[i]);
-			}
-			await Task.WhenAll(parallelEntryTasks);
 
 			// システムインスタンスの作成
 			AsyncUtilityInternal.Post(() => {
@@ -188,44 +196,72 @@ namespace skyclad.lunarscape {
 			});
 		}
 
-		private async Task CreatePlayerEntity(LunarscapeEntrySetting entry) {
-			AsyncUtilityInternal.Post(() => {
-				ECSUtilityInternal.ExecuteCommandBufferTemp(commandBuffer => {
-					Entity entity = commandBuffer.CreateEntity(_playerArchetype);
-					commandBuffer.SetComponent(entity, LocalTransform.FromPositionRotation(entry.position, entry.rotation));
-					commandBuffer.SetComponent(entity, new LocalToWorld{ Value = float4x4.TRS(entry.position, entry.rotation, new float3(1f,1f,1f))});
-					commandBuffer.SetDebugName(entity, entry.entryName);
-				});
-			});
-			await Task.Yield();
-		}
-
-		private async Task LoadGroup(string guid) {
-			 await LunarscapeLoadTableManager.Load(guid, async group => {
-				using(new Process($"Load Table@{group.fieldGuid}")) {
+		private async Task LoadGroup(int id, string guid) {
+			using (new Process($"Load Table@id={id}({guid})")) {
+				await LunarscapeLoadTableManager.Load(guid, async group => {
 					await LoadGroupAvatars(group);
-				}
-			 });
+				 });
+
+				AsyncUtilityInternal.Post(() => {
+					ECSUtilityInternal.ExecuteCommandBufferTemp( commandBuffer => {
+						_tableLoadingQuery.ForEach<LunarscapeTableLoadingFlag>((e, flag) => {
+							if (flag.id == id) {
+								commandBuffer.DestroyEntity(e);
+							}
+						});
+					});
+				});
+			}
 		}
 
 		private async Task LoadGroupAvatars(LunarscapeLoadTable.LoadGroup group) {
 			AsyncUtilityInternal.Send(() => {
+				List<int> avatarIds = new List<int>();
 				foreach(LunarscapeLoadTable.AvatarSpawn avatar in group.avatarSpawns) {
-					AvatarResourceManager.CreatePrefab(avatar.avatarId);
+					if (! avatarIds.Contains(avatar.avatarId)) {
+						AvatarResourceManager.CreatePrefab(avatar.avatarId);
+						avatarIds.Add(avatar.avatarId);
+					}
+
+					float3 position;
+					quaternion rotation;
+					if (avatar.playerIndex >= 0) {
+						if (avatar.playerIndex < _entrySettings.Length) {
+							LunarscapeEntrySetting settings = _entrySettings[avatar.playerIndex];
+							position = settings.position;
+							rotation = settings.rotation;
+						} else {
+							position = float3.zero;
+							rotation = quaternion.identity;
+							D.LogW($"Player {avatar.playerIndex.ToString("00")} not provided.");
+						}
+					} else {
+						position = avatar.position;
+						rotation = avatar.rotation;
+					}
+
 					ECSUtilityInternal.ExecuteCommandBufferTemp(commandBuffer => {
 						Entity entity = commandBuffer.CreateEntity();
 						commandBuffer.AddComponent(
 							entity, 
-							new LunarscapeAvatarSpawnRequest{
+							new LunarscapeAvatarSpawnRequest {
 								id = avatar.avatarId,
-								position = avatar.position,
-								rotation = avatar.rotation,
+								position = position,
+								rotation = rotation,
+								playerIndex = avatar.playerIndex,
 							}
 						);
 					});
 				}
+				AvatarResourceManager.AddLoadPrefabTable(group.fieldGuid, avatarIds);
 			});
 			await Task.Yield();
+		}
+
+		private void UnloadGroup(string guid) {
+			using(new Process($"Unload Table@{guid}")) {
+				AvatarResourceManager.RemoveLoadPrefabTable(guid);
+			}
 		}
 	}
 }

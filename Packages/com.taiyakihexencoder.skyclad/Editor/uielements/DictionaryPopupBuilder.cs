@@ -7,30 +7,28 @@ namespace skyclad.editor {
 	/// </summary>
 	/// <typeparam name="KEY"></typeparam>
 	public class DictionaryPopupBuilder<KEY> {
-		private Dictionary<KEY, string> _data;
 		private List<KEY> _keys;
 		private System.Func<KEY, string> _nameConverter;
 
 		private System.Action onDictionaryUpdated;
 
-		public DictionaryPopupBuilder(System.Func<KEY, string> formatString = null) {
-			_data = new Dictionary<KEY, string>();
+		public DictionaryPopupBuilder() {
 			_keys = new List<KEY>();
-			_nameConverter = formatString;
+			_nameConverter = DefaultCoverter;
 		}
 
 		public PopupField<KEY> Generate(KEY defaultValue) {
 			PopupField<KEY> popup = new PopupField<KEY>(
 				choices: _keys,
 				defaultIndex: _keys.FindIndex(_ => _.Equals(defaultValue)),
-				formatListItemCallback: _nameConverter ?? DefaultCoverter,
-				formatSelectedValueCallback: _nameConverter ?? DefaultCoverter
+				formatListItemCallback: _nameConverter,
+				formatSelectedValueCallback: _nameConverter
 			);
 
 			System.Action onUpdated = () => {
 				popup.choices = _keys;
-				popup.formatListItemCallback = _nameConverter ?? DefaultCoverter;
-				popup.formatSelectedValueCallback = _nameConverter ?? DefaultCoverter;
+				popup.formatListItemCallback = _nameConverter;
+				popup.formatSelectedValueCallback = _nameConverter;
 			};
 			onDictionaryUpdated += onUpdated;
 
@@ -44,14 +42,19 @@ namespace skyclad.editor {
 			return popup;
 		}
 
-		public void Update(Dictionary<KEY, string> table) {
-			_data = table;
-			_keys = new List<KEY>(table.Keys);
+		public DictionaryPopupBuilder<KEY> SetKeys(List<KEY> keys) {
+			_keys = keys;
 			onDictionaryUpdated?.Invoke();
+			return this;
+		}
+
+		public DictionaryPopupBuilder<KEY> SetConverter(System.Func<KEY, string> converter) {
+			_nameConverter = converter ?? DefaultCoverter;
+			return this;
 		}
 
 		private string DefaultCoverter(KEY key) {
-			return _data.TryGetValue(key, out string text) ? text : "-";
+			return key.ToString();
 		}
 	}
 }

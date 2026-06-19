@@ -6,5 +6,6 @@ namespace skyclad.lunarscape.internalProc {
 		public int id;
 		public float3 position;
 		public quaternion rotation;
+		public int playerIndex;
 	}
 }

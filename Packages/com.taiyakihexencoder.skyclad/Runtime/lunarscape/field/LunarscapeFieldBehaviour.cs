@@ -1,5 +1,4 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using skyclad.internalProc;
 using skyclad.lunarscape.internalProc;
 using Unity.Collections;
@@ -56,7 +55,13 @@ namespace skyclad.lunarscape {
 					FieldManager.CreateFieldMeshEntities(entities[i], ids[i], fieldResList[i]);
 					Entity requestEntity = commandBuffer.CreateEntity();
 					// フィールドとセットのコンテンツの読込を依頼
-					commandBuffer.AddComponent(requestEntity, new LunarscapeLoadTableRequest{ guid = fieldResList[i].guid, });
+					commandBuffer.AddComponent(
+						requestEntity, 
+						new LunarscapeLoadTableGroupRequest {
+							id = ids[i],
+							guid = fieldResList[i].guid,
+						}
+					);
 				});
 			}
 		}

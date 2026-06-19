@@ -54,6 +54,10 @@ namespace skyclad.lunarscape.internalProc {
 						Entity instance = commandBuffer.Instantiate(sortKey, entity);
 						commandBuffer.SetComponent(sortKey, instance, LocalTransform.FromPositionRotation(request.position, request.rotation));
 						commandBuffer.RemoveComponent<Parent>(sortKey, instance);
+
+						if (request.playerIndex >= 0) {
+							commandBuffer.AddComponent<LunarscapeFieldObservePoint>(sortKey, instance);
+						}
 					}
 				}
 			}

@@ -1,8 +1,7 @@
 ﻿using Unity.Entities;
 
 namespace skyclad.lunarscape.internalProc {
-	public struct LunarscapeFieldCreateRequest : IComponentData {
-		public Entity entity;
+	public struct LunarscapeAvatarDeletePrefabRequest : IComponentData {
 		public int id;
 	}
 }

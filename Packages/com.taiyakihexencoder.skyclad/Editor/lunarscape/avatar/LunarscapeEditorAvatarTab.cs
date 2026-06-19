@@ -395,7 +395,8 @@ namespace skyclad.lunarscape.editor {
 					colliderProperty.Of("name").stringValue
 				);
 			}
-			_colliderPopupBuilder.Update(table);
+			_colliderPopupBuilder.SetKeys(new List<int>(table.Keys));
+			_colliderPopupBuilder.SetConverter(key => table.TryGetValue(key, out string name) ? name : " - ");
 		}
 	}
 }

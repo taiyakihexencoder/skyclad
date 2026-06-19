@@ -18,6 +18,7 @@ namespace skyclad.lunarscape.internalProc {
 			public int avatarId;
 			public Vector3 position;
 			public Quaternion rotation;
+			public int playerIndex;
 		}
 
 		[SerializeField]
